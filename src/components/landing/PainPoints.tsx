@@ -1,0 +1,105 @@
+"use client";
+
+import { motion } from "framer-motion";
+
+const PAIN_CARDS = [
+  {
+    emoji: "📵",
+    stat: "67%",
+    statColor: "text-brand-red",
+    title: "Пропуснати обаждания",
+    subtitle: "от пациентите не се обаждат пак след пропуснато повикване",
+    accentColor: "from-red-500/50",
+    borderColor: "border-red-500/20",
+  },
+  {
+    emoji: "💸",
+    stat: "180K лв",
+    statColor: "text-brand-gold",
+    title: "Изгубени приходи",
+    subtitle: "средно годишно за клиника, поради пропуснати пациенти",
+    accentColor: "from-amber-500/50",
+    borderColor: "border-amber-500/20",
+  },
+  {
+    emoji: "🏃",
+    stat: "Конкурентът",
+    statColor: "text-brand-purple",
+    title: "вече използва AI",
+    subtitle: "докато вие отговаряте на обаждания ръчно",
+    accentColor: "from-purple-500/50",
+    borderColor: "border-purple-500/20",
+  },
+];
+
+export default function PainPoints() {
+  return (
+    <section id="pain-points" className="py-24 relative">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-16"
+        >
+          <h2 className="text-4xl lg:text-5xl font-heading font-bold text-white">
+            Колко пациенти губите{" "}
+            <span className="text-brand-red">ВСЕКИ ДЕН?</span>
+          </h2>
+          <p className="text-slate-400 text-lg mt-4 max-w-2xl mx-auto">
+            Реалността е безмилостна. Докато вие сте зает с пациент на стол,
+            телефонът звъни — и пациентите отиват при конкурента.
+          </p>
+        </motion.div>
+
+        <div className="grid md:grid-cols-3 gap-6 mb-12">
+          {PAIN_CARDS.map((card, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: i * 0.15 }}
+              className={`relative bg-dark-800 border ${card.borderColor} rounded-2xl overflow-hidden`}
+            >
+              {/* Top accent line */}
+              <div className={`h-1 w-full bg-gradient-to-r ${card.accentColor} to-transparent`} />
+
+              <div className="p-8 text-center">
+                <div className="text-5xl mb-4">{card.emoji}</div>
+                <p className={`text-4xl font-heading font-bold ${card.statColor} mb-2`}>
+                  {card.stat}
+                </p>
+                <h3 className="text-xl font-semibold text-white mb-3">{card.title}</h3>
+                <p className="text-slate-400 text-sm leading-relaxed">{card.subtitle}</p>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Urgency bar */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30 rounded-2xl px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-4"
+        >
+          <div className="flex items-center gap-3">
+            <span className="text-2xl animate-ring">🔔</span>
+            <div>
+              <p className="text-white font-semibold">Ограничена наличност</p>
+              <p className="text-slate-400 text-sm">
+                Приемаме само 5 нови клиники тази седмица
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-brand-gold font-bold text-lg">Само 5 места</span>
+            <span className="text-slate-400">останали</span>
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
