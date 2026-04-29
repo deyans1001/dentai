@@ -20,22 +20,42 @@ function generateSessionId() {
 }
 
 export default function ChatWidget({ clinicId, className, clinicContext }: ChatWidgetProps) {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: "assistant",
-      content:
-        "Здравейте! Аз съм AI рецепционист на Дентал Смайл. Мога да Ви помогна с записване на час, информация за услуги и цени. С какво мога да Ви помогна?",
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sessionId] = useState(generateSessionId);
-  // scrollable container ref — we scroll IT, not the page
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const greetingFetched = useRef(false);
 
-  // Scroll only INSIDE the chat container, never the page
+  // Зарежда приветствие от AI при първо отваряне
+  useEffect(() => {
+    if (greetingFetched.current) return;
+    greetingFetched.current = true;
+
+    setIsLoading(true);
+    fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        messages: [{ role: "user", content: "__greeting__" }],
+        clinicId,
+        sessionId,
+        clinicContext,
+      }),
+    })
+      .then((r) => r.json())
+      .then((data: { reply: string }) => {
+        setMessages([{ role: "assistant", content: data.reply }]);
+      })
+      .catch(() => {
+        setMessages([{ role: "assistant", content: "Здравейте! Как мога да ви помогна?" }]);
+      })
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  // Scroll само в контейнера на чата
   useEffect(() => {
     const container = scrollContainerRef.current;
     if (container) {
