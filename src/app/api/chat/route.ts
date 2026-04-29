@@ -93,12 +93,12 @@ export async function POST(req: NextRequest) {
 
     if (!history) return NextResponse.json({ reply: "Моля, напишете съобщение." });
 
-    const apiKey = process.env.ANTHROPIC_API_KEY;
+    const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey || apiKey.length < 10) {
       return NextResponse.json({ reply: "Грешка с конфигурацията. Опитайте по-късно." });
     }
 
-    // Anthropic API изисква историята да започва с "user"
+    // Groq API изисква историята да започва с "user"
     const firstUserIndex = history.findIndex((m) => m.role === "user");
     if (firstUserIndex === -1) return NextResponse.json({ reply: "Моля, напишете съобщение." });
     const apiMessages = history.slice(firstUserIndex);
@@ -116,7 +116,6 @@ export async function POST(req: NextRequest) {
     }
 
     // Определяме дали разговорът вече е започнал
-    // firstUserIndex > 0 = преди него имаше assistant greeting = разговорът е started
     const userTurns = apiMessages.filter((m) => m.role === "user").length;
     const conversationStarted = firstUserIndex > 0 || userTurns > 1;
 
@@ -133,17 +132,18 @@ export async function POST(req: NextRequest) {
       .filter(Boolean)
       .join("\n\n");
 
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
+        "Authorization": `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "claude-opus-4-7",
-        system: systemPrompt,
-        messages: apiMessages,
+        model: "llama-3.3-70b-versatile",
+        messages: [
+          { role: "system", content: systemPrompt },
+          ...apiMessages,
+        ],
         max_tokens: 300,
         temperature: 0.2,
       }),
@@ -155,7 +155,7 @@ export async function POST(req: NextRequest) {
     }
 
     const data = await res.json();
-    let reply: string = data?.content?.[0]?.text ?? "";
+    let reply: string = data?.choices?.[0]?.message?.content ?? "";
 
     // Принудително махаме поздрав ако разговорът е в ход
     if (conversationStarted && reply) {
