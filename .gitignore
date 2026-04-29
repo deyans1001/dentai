@@ -34,3 +34,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+dentai.zip
+files.zip
+awesome-claude-skills-master.zip
+awesome-claude-skills-master/
