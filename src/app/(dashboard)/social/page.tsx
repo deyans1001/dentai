@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Send, Clock, CheckCircle, Trash2, Plus, RefreshCw, Facebook, Instagram, Linkedin, X } from "lucide-react";
+import { CheckCircle, XCircle, Send, Clock, Trash2, Plus, RefreshCw, Facebook, Instagram, Linkedin, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Platform = "facebook" | "instagram" | "linkedin" | "tiktok";
-type PostStatus = "draft" | "scheduled" | "published" | "failed";
+type PostStatus = "pending" | "published" | "rejected" | "scheduled" | "failed";
 
 interface SocialPost {
   id: string;
@@ -19,96 +19,61 @@ interface SocialPost {
 }
 
 const PLATFORM_ICONS: Record<Platform, React.ReactNode> = {
-  facebook: <Facebook size={14} />,
-  instagram: <Instagram size={14} />,
-  linkedin: <Linkedin size={14} />,
-  tiktok: <span className="text-xs font-bold">TT</span>,
+  facebook: <Facebook size={13} />,
+  instagram: <Instagram size={13} />,
+  linkedin: <Linkedin size={13} />,
+  tiktok: <span className="text-[10px] font-black">TT</span>,
 };
 
 const PLATFORM_COLORS: Record<Platform, string> = {
   facebook: "bg-blue-600",
-  instagram: "bg-pink-600",
+  instagram: "bg-gradient-to-br from-pink-500 to-purple-600",
   linkedin: "bg-blue-500",
-  tiktok: "bg-black border border-white/20",
+  tiktok: "bg-dark-900 border border-white/20",
 };
-
-const STATUS_CONFIG: Record<PostStatus, { label: string; color: string }> = {
-  draft: { label: "Чернова", color: "text-slate-400 bg-slate-800" },
-  scheduled: { label: "Планиран", color: "text-amber-400 bg-amber-500/10" },
-  published: { label: "Публикуван", color: "text-green-400 bg-green-500/10" },
-  failed: { label: "Неуспешен", color: "text-red-400 bg-red-500/10" },
-};
-
-// Готово AI съдържание — 30 поста
-const AI_CONTENT_LIBRARY = [
-  {
-    category: "TikTok/Reels",
-    emoji: "🎬",
-    posts: [
-      "В момента, в който четете това, вашата клиника пропуска обаждане. 📞\n\nAI рецепционистът на DentAI отговаря вместо вас — 24/7, на перфектен български.\n\n#DentAI #AIРецепционист #стоматология #дентална",
-      "Позвъних на 20 клиники в София след 20:00 часа.\n\n17 от тях: никой не отговори.\n2: автоматичен секретар.\n1: AI рецепционист, записа ме за 47 секунди. 🤖\n\nПознайте коя клиника спечели пациента?\n\n#DentAI #стоматология #AI",
-      "Рецепционист: 1,400 лв./месец. Работи 8 часа.\nDentAI: 199 лв./месец. Работи 24 часа. 🔥\n\nИзборът е очевиден.\n\n#DentAI #AIРецепционист #стоматологичнаклиника",
-      "Докато спяхте тази нощ... 🌙\n\nDentAI отговори на 4 обаждания.\nЗаписа 3 пациента.\nИзпрати 3 напомняния.\nСпести 2 часа административна работа.\n\nЛека нощ. 😴\n\n#DentAI #автоматизация #стоматология",
-      "Мит: AI не може да говори добър български. ❌\nРеалност: Чуйте сами. ✅\n\n[демо запис]\n\n94% от пациентите не различават Ива от истинска рецепционистка.\n\n#DentAI #AIРецепционист #България",
-      "Вашият конкурент тъкмо монтира AI рецепционист. 😬\n\nТой ще отговаря в 23:00.\nТой ще записва в събота.\nТой ще взима вашите пациенти.\n\nА вие?\n\n#DentAI #стоматология #иновации",
-      "POV: Рецепционистката в петък следобед в 17:45 🫠\n\n- телефонът звъни\n- пациент на рецепцията\n- WhatsApp с 12 съобщения\n- лекарят пита за файл\n\nDentAI се справя с всичко. Тя — не винаги.\n\n#стоматология #DentAI",
-      "62% от пациентите НЕ перезвъняват. 📊\n\nВсяко пропуснато обаждане = загубен пациент = загубени пари.\n\nКолко сте изгубили само тази седмица?\n\n#DentAI #стоматологичнаклиника #AIРецепционист",
-      "Гледайте как AI записва пациент в 22:47 без никакъв човек. 🤖\n\n[демо видео]\n\nТова се случва всяка нощ в клиниките с DentAI.\n\n#DentAI #AI #стоматология",
-      "Спрете да търсите нова рецепционистка. 🛑\n\nПроблемът не е тя.\nПроблемът е, че клиниката не може да работи 24/7.\n\nDentAI може.\n\n#DentAI #AIРецепционист #дентална",
-    ],
-  },
-  {
-    category: "Instagram",
-    emoji: "📸",
-    posts: [
-      "Знаете ли колко пациента сте изгубили само тази седмица? 🦷\n\nСредната клиника в София пропуска между 8 и 15 обаждания на ден. При имплант от 2,000 лв. — това са десетки хиляди лева годишно, излезли от вратата.\n\nDentAI отговаря на всяко обаждане. Денем, нощем, в събота, в неделя. На перфектен български.\n\nВземете безплатна демонстрация → линкът в биото 👆\n\n#DentAI #AIРецепционист #стоматология #дентална #зъболекар #иновации #България",
-      "Преди 3 месеца клиника в Пловдив пропускаше 12 обаждания на ден. 📉\n\nСлед DentAI:\n✅ 0 пропуснати обаждания\n✅ +34 записвания за месеца\n✅ +8,200 лв. допълнителен приход\n\nЦялото разграждане в Stories.\n\n#DentAI #стоматология #резултати #AIРецепционист #зъболекар",
-      "AI рецепционистът не замества вашия екип. 🤝\n\nТой освобождава вашия екип.\n\nДокато Ива (нашият AI) отговаря на телефона в 23:00, вашата рецепционистка се грижи за пациентите пред нея.\n\nДве неща едновременно. Нула стрес.\n\n#DentAI #стоматология #AIРецепционист #автоматизация",
-      "5 признака, че клиниката ви е готова за AI рецепционист 👇\n\n1️⃣ Пропускате повече от 5 обаждания на ден\n2️⃣ Рецепционистката е претоварена в пиков час\n3️⃣ Имате пациенти, които искат да записват вечер или уикенд\n4️⃣ Плащате за рецепционист повече от 800 лв./месец\n5️⃣ Искате да растете без да наемате повече хора\n\nАко се разпознавате → linktree в биото\n\n#DentAI #стоматология #AI",
-      "Обзалагам се, че губите 15,000 лв. годишно от пропуснати обаждания. 💸\n\nИзчислете сами:\n- Средно 10 пропуснати обаждания/ден\n- 30% биха станали пациенти\n- Средна стойност на пациент: 200 лв.\n\n= 10 × 0.3 × 200 × 250 работни дни = **150,000 лв./год**\n\nDentAI струва 199 лв./месец.\n\nМатематиката е проста. 🧮\n\n#DentAI #стоматология #AIРецепционист",
-    ],
-  },
-  {
-    category: "Facebook",
-    emoji: "👥",
-    posts: [
-      "Уважаеми колеги зъболекари и мениджъри на дентални клиники,\n\nИскам да споделя нещо, което промени начина, по който управлявам клиниката си.\n\nПреди 6 месеца имах типичния проблем — телефонът звъни, докато съм при пациент. Рецепционистката е заета. Обажданията се пропускат. Пациентите не перезвъняват.\n\nВъведох AI рецепционист (DentAI). Резултатите след 30 дни:\n→ 0 пропуснати обаждания\n→ 28 нови записвания само за месеца\n→ Рецепционистката ми е 10 пъти по-малко стресирана\n\nАко имате въпроси — питайте в коментарите. Радвам се да споделя опита си.\n\n#стоматология #управлениеклиника #AI #иновации",
-      "Въпрос към собствениците на дентални клиники: Колко обаждания пропускате на ден? 📊\n\nА) 0-3\nБ) 4-7\nВ) 8-15\nГ) Повече от 15\n\nПишете буквата в коментар — интересно ми е каква е реалността при вас.\n\nPs. Ако отговорихте Б, В или Г — имам нещо важно да ви кажа. 👇",
-      "Много собственици на клиники ме питат: \"Ами ако AI направи грешка при записването?\"\n\nРазбирам притеснението. Затова ще бъда директен:\n\nAI не:\n❌ Прави двойни записвания\n❌ Забравя да запише телефона\n❌ Бърка датите\n❌ Казва \"Ще ви звъним\" и не звъни\n\nAI:\n✅ Записва точно това, което пациентът каже\n✅ Изпраща потвърждение веднага\n✅ Напомня 24 часа преди часа\n✅ Работи по едно и също правило всеки път\n\nИмате въпроси? Питайте. 💬",
-      "Честно казано — въвеждането на AI в клиниката беше по-лесно, отколкото очаквах.\n\n1 час настройка.\nНикакви технически познания не са нужни.\nЕкипът се адаптира за 2 дни.\n\nА резултатите идват от първата седмица.\n\nАко се колебаете дали е за вас — предлагаме 14 дни безплатно, без кредитна карта.\n\nПробвайте. Ако не харесате — нищо не сте изгубили. 🤝",
-      "Новата норма за денталните клиники в България:\n\n2023: Рецепционист на телефона\n2024: Смесен модел\n2025: AI отговаря, хората се грижат за пациентите ✅\n\nКлиниките, които приеха тази промяна рано, вече имат конкурентно предимство.\n\nКлиниките, които чакат — изостават.\n\nВ коя група искате да бъдете?\n\n#DentAI #стоматология #иновации #AIРецепционист",
-    ],
-  },
-  {
-    category: "LinkedIn",
-    emoji: "💼",
-    posts: [
-      "Анализирахме 100 дентални клиники в България. Ето какво открихме:\n\n73% нямат система за пропуснати обаждания\n61% не разбират колко пациента губят всеки месец\n84% плащат за рецепционист повече от 1,000 лв./месец\n\nА средната клиника губи 12 обаждания на ден.\n\nПри средна стойност на пациент от 250 лв. — това е 3,000 лв. на ден. Или 60,000 лв. на месец. Или 720,000 лв. годишно.\n\nНе защото не им пука. А защото нямат правилния инструмент.\n\nDentAI решава точно този проблем.\n\n#AI #стоматология #денталнибизнес #иновации #България",
-      "Защо AI рецепционистите ще станат стандарт в денталната индустрия до 2026:\n\n1. Пациентите очакват отговор 24/7\n2. Разходите за персонал нарастват\n3. AI технологията достигна ниво, неразличимо от човек\n4. ROI е доказан и измерим\n5. Конкурентният натиск ще принуди останалите да последват\n\nРанните приематели вече имат предимство.\n\nКъде стои вашата клиника в тази трансформация?\n\n#HealthTech #AI #Стоматология #ДигиталнаТрансформация",
-    ],
-  },
-];
 
 const ALL_PLATFORMS: Platform[] = ["facebook", "instagram", "linkedin", "tiktok"];
 
+const AI_POSTS = [
+  { category: "Вирален", content: "В момента, в който четете това, вашата клиника пропуска обаждане. 📞\n\nAI рецепционистът на DentAI отговаря вместо вас — 24/7, на перфектен български.\n\n#DentAI #AIРецепционист #стоматология #дентална" },
+  { category: "Вирален", content: "Позвъних на 20 клиники в София след 20:00 часа.\n\n17 от тях: никой не отговори.\n2: автоматичен секретар.\n1: AI рецепционист, записа ме за 47 секунди. 🤖\n\nПознайте коя клиника спечели пациента?\n\n#DentAI #стоматология #AI" },
+  { category: "Сравнение", content: "Рецепционист: 1,400 лв./месец. Работи 8 часа.\nDentAI: 199 лв./месец. Работи 24 часа. 🔥\n\nИзборът е очевиден.\n\n#DentAI #AIРецепционист #стоматологичнаклиника" },
+  { category: "Вирален", content: "Докато спяхте тази нощ... 🌙\n\nDentAI отговори на 4 обаждания.\nЗаписа 3 пациента.\nИзпрати 3 напомняния.\nСпести 2 часа административна работа.\n\nЛека нощ. 😴\n\n#DentAI #автоматизация #стоматология" },
+  { category: "FOMO", content: "Вашият конкурент тъкмо монтира AI рецепционист. 😬\n\nТой ще отговаря в 23:00.\nТой ще записва в събота.\nТой ще взима вашите пациенти.\n\nА вие?\n\n#DentAI #стоматология #иновации" },
+  { category: "Болка", content: "62% от пациентите НЕ перезвъняват. 📊\n\nВсяко пропуснато обаждане = загубен пациент = загубени пари.\n\nКолко сте изгубили само тази седмица?\n\n#DentAI #стоматологичнаклиника #AIРецепционист" },
+  { category: "Демо", content: "Гледайте как AI записва пациент в 22:47 без никакъв човек. 🤖\n\nТова се случва всяка нощ в клиниките с DentAI.\n\n#DentAI #AI #стоматология" },
+  { category: "Болка", content: "Спрете да търсите нова рецепционистка. 🛑\n\nПроблемът не е тя.\nПроблемът е, че клиниката не може да работи 24/7.\n\nDentAI може.\n\n#DentAI #AIРецепционист #дентална" },
+  { category: "Резултати", content: "Преди DentAI: 38 нови пациента на месец.\nСлед DentAI: 54. 📈\n\nБез нов персонал. Без реклама.\n\n#резултати #дентална #DentAI" },
+  { category: "Социално", content: "\"Само двама пациента ме попитаха дали говорят с робот.\nЕдиният каза, че е по-учтив от някои рецепционисти.\" 😄\n\n— Д-р К.Г., Пловдив\n\n#DentAI #отзив #стоматология" },
+  { category: "Образование", content: "Как работи AI рецепционистът? 🤔\n\n1️⃣ Пациентът звъни\n2️⃣ DentAI отговаря на естествен български\n3️⃣ Проверява календара\n4️⃣ Записва час\n5️⃣ Изпраща SMS потвърждение\n\nВсичко за под 3 минути. Без ваша намеса.\n\n#DentAI #AI #стоматология" },
+  { category: "FOMO", content: "Новата норма за денталните клиники:\n\n2023: Рецепционист на телефона\n2024: Смесен модел\n2025: AI отговаря, хората се грижат за пациентите ✅\n\nВ коя група сте вие?\n\n#DentAI #иновации #стоматология" },
+  { category: "Цена", content: "Изчислихме:\n\n10 пропуснати обаждания/ден\n× 30% нови пациенти\n× 200 лв. средна стойност\n× 250 работни дни\n\n= 150,000 лв./год изгубени 💸\n\nDentAI: 199 лв./месец.\n\n#DentAI #стоматология #математика" },
+  { category: "Нощ", content: "В 23:47 миналата нощ пациент се обади в клиника в Варна.\n\nDentAI отговори.\nЧасът е записан.\nВие спяхте спокойно. 🌙\n\n#DentAI #стоматология #24_7" },
+  { category: "Социално", content: "Д-р Стефан от Варна:\n\n\"Откакто имам DentAI, не съм пропуснал нито едно записване.\nРаботя по-малко стресирано.\nИ клиниката ми расте.\"\n\n#DentAI #зъболекар #резултати" },
+];
+
 export default function SocialPage() {
-  const [tab, setTab] = useState<"library" | "compose" | "scheduled" | "published">("library");
+  const [tab, setTab] = useState<"pending" | "published" | "compose" | "library">("pending");
   const [posts, setPosts] = useState<SocialPost[]>([]);
   const [loading, setLoading] = useState(false);
-  const [composing, setComposing] = useState(false);
+  const [approving, setApproving] = useState<string | null>(null);
+  const [notification, setNotification] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  // Compose state
+  // Compose
   const [content, setContent] = useState("");
   const [selectedPlatforms, setSelectedPlatforms] = useState<Platform[]>([...ALL_PLATFORMS]);
   const [scheduledAt, setScheduledAt] = useState("");
-  const [posting, setPosting] = useState(false);
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [saving, setSaving] = useState(false);
 
-  const fetchPosts = useCallback(async (status?: string) => {
+  const notify = (type: "success" | "error", text: string) => {
+    setNotification({ type, text });
+    setTimeout(() => setNotification(null), 4000);
+  };
+
+  const fetchPosts = useCallback(async (status: string) => {
     setLoading(true);
     try {
-      const url = status ? `/api/social/posts?status=${status}` : "/api/social/posts";
-      const res = await fetch(url);
+      const res = await fetch(`/api/social/posts?status=${status}`);
       const data = await res.json();
       setPosts(Array.isArray(data) ? data : []);
     } finally {
@@ -117,120 +82,117 @@ export default function SocialPage() {
   }, []);
 
   useEffect(() => {
-    if (tab === "scheduled") fetchPosts("scheduled");
+    if (tab === "pending") fetchPosts("pending");
     else if (tab === "published") fetchPosts("published");
   }, [tab, fetchPosts]);
 
-  function togglePlatform(p: Platform) {
-    setSelectedPlatforms((prev) =>
-      prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p]
-    );
+  async function approve(post: SocialPost) {
+    setApproving(post.id);
+    try {
+      const res = await fetch("/api/social/post", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: post.content, platforms: post.platforms, postId: post.id }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        notify("success", "Постът е публикуван успешно! ✅");
+        setPosts((prev) => prev.filter((p) => p.id !== post.id));
+      } else {
+        notify("error", "Грешка при публикуване. Провери Facebook токена.");
+      }
+    } catch {
+      notify("error", "Неочаквана грешка.");
+    } finally {
+      setApproving(null);
+    }
   }
 
-  async function savePost(status: "draft" | "scheduled" | "published") {
+  async function reject(id: string) {
+    await fetch(`/api/social/posts?id=${id}`, { method: "DELETE" });
+    setPosts((prev) => prev.filter((p) => p.id !== id));
+    notify("success", "Постът е отхвърлен.");
+  }
+
+  async function queuePost(text: string, category: string) {
+    const res = await fetch("/api/social/posts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: text, platforms: ALL_PLATFORMS, category, status: "pending" }),
+    });
+    if (res.ok) {
+      notify("success", "Постът е добавен за преглед! Отиди в 'За одобрение'.");
+    }
+  }
+
+  async function saveCompose() {
     if (!content.trim()) return;
-    setPosting(true);
-    setMessage(null);
+    setSaving(true);
     try {
-      // 1. Save to DB
-      const saveRes = await fetch("/api/social/posts", {
+      const res = await fetch("/api/social/posts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           content,
           platforms: selectedPlatforms,
-          status: scheduledAt ? "scheduled" : status,
+          status: scheduledAt ? "scheduled" : "pending",
           scheduledAt: scheduledAt || null,
         }),
       });
-      const savedPost = await saveRes.json();
-
-      // 2. If publishing now (no schedule), post immediately
-      if (!scheduledAt && status === "published") {
-        await fetch("/api/social/post", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            content,
-            platforms: selectedPlatforms,
-            postId: savedPost.id,
-          }),
-        });
-        setMessage({ type: "success", text: "Постът е публикуван успешно!" });
-      } else if (scheduledAt) {
-        setMessage({ type: "success", text: `Постът е планиран за ${new Date(scheduledAt).toLocaleString("bg-BG")}!` });
-      } else {
-        setMessage({ type: "success", text: "Запазен като чернова." });
+      if (res.ok) {
+        notify("success", scheduledAt ? "Планиран успешно!" : "Добавен за одобрение!");
+        setContent("");
+        setScheduledAt("");
+        setTab("pending");
       }
-
-      setContent("");
-      setScheduledAt("");
-      setSelectedPlatforms([...ALL_PLATFORMS]);
-      setComposing(false);
-    } catch {
-      setMessage({ type: "error", text: "Грешка при публикуването. Проверете Ayrshare API ключа." });
     } finally {
-      setPosting(false);
+      setSaving(false);
     }
   }
 
-  async function deletePost(id: string) {
-    await fetch(`/api/social/posts?id=${id}`, { method: "DELETE" });
-    setPosts((prev) => prev.filter((p) => p.id !== id));
-  }
-
-  function useLibraryPost(text: string) {
-    setContent(text);
-    setTab("compose" as never);
-    setComposing(true);
-  }
-
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="max-w-3xl mx-auto space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-heading font-bold text-white">Социални мрежи</h1>
-          <p className="text-slate-400 text-sm mt-1">Управлявайте и планирайте съдържание за всички платформи</p>
+          <p className="text-slate-400 text-sm mt-0.5">Прегледай и одобри постовете с 1 клик</p>
         </div>
         <button
-          onClick={() => { setComposing(true); setTab("compose" as never); }}
-          className="flex items-center gap-2 px-4 py-2.5 bg-brand-blue hover:bg-blue-600 text-white rounded-xl text-sm font-semibold transition-all"
+          onClick={() => setTab("compose")}
+          className="flex items-center gap-2 px-4 py-2 bg-brand-blue hover:bg-blue-600 text-white rounded-xl text-sm font-semibold transition-all"
         >
-          <Plus size={16} />
+          <Plus size={15} />
           Нов пост
         </button>
       </div>
 
       {/* Notification */}
-      {message && (
+      {notification && (
         <div className={cn(
-          "flex items-center justify-between px-4 py-3 rounded-xl text-sm",
-          message.type === "success"
+          "px-4 py-3 rounded-xl text-sm font-medium",
+          notification.type === "success"
             ? "bg-green-500/10 border border-green-500/30 text-green-400"
             : "bg-red-500/10 border border-red-500/30 text-red-400"
         )}>
-          <span>{message.text}</span>
-          <button onClick={() => setMessage(null)}><X size={14} /></button>
+          {notification.text}
         </div>
       )}
 
       {/* Tabs */}
       <div className="flex gap-1 bg-dark-800 border border-white/8 rounded-xl p-1">
         {([
+          { key: "pending", label: "За одобрение", emoji: "👀" },
           { key: "library", label: "AI Библиотека", emoji: "🤖" },
-          { key: "compose", label: "Нов пост", emoji: "✍️" },
-          { key: "scheduled", label: "Планирани", emoji: "🕐" },
+          { key: "compose", label: "Напиши", emoji: "✍️" },
           { key: "published", label: "Публикувани", emoji: "✅" },
         ] as const).map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
             className={cn(
-              "flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-sm font-medium transition-all",
-              tab === t.key
-                ? "bg-brand-blue text-white"
-                : "text-slate-400 hover:text-white hover:bg-white/5"
+              "flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs font-semibold transition-all",
+              tab === t.key ? "bg-brand-blue text-white" : "text-slate-400 hover:text-white hover:bg-white/5"
             )}
           >
             <span>{t.emoji}</span>
@@ -239,83 +201,145 @@ export default function SocialPage() {
         ))}
       </div>
 
-      {/* AI Library Tab */}
+      {/* PENDING — одобряване */}
+      {tab === "pending" && (
+        <div className="space-y-4">
+          {loading && [1, 2].map((i) => (
+            <div key={i} className="bg-dark-800 border border-white/8 rounded-2xl p-5 animate-pulse">
+              <div className="h-4 bg-dark-700 rounded w-3/4 mb-3" />
+              <div className="h-3 bg-dark-700 rounded w-full mb-2" />
+              <div className="h-3 bg-dark-700 rounded w-2/3" />
+            </div>
+          ))}
+
+          {!loading && posts.length === 0 && (
+            <div className="text-center py-16 bg-dark-800 border border-white/8 rounded-2xl">
+              <div className="text-4xl mb-3">👀</div>
+              <p className="text-white font-semibold mb-1">Няма постове за преглед</p>
+              <p className="text-slate-500 text-sm mb-5">Избери пост от AI Библиотеката или напиши свой</p>
+              <button
+                onClick={() => setTab("library")}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-brand-blue hover:bg-blue-600 text-white rounded-xl text-sm font-semibold transition-all"
+              >
+                Отиди в библиотеката <ChevronRight size={14} />
+              </button>
+            </div>
+          )}
+
+          {!loading && posts.map((post) => (
+            <div key={post.id} className="bg-dark-800 border border-white/8 rounded-2xl overflow-hidden">
+              {/* Category badge */}
+              <div className="px-5 pt-4 pb-0 flex items-center justify-between">
+                <span className="text-xs text-slate-500 font-medium uppercase tracking-wide">{post.category}</span>
+                <div className="flex gap-1">
+                  {post.platforms.map((p) => (
+                    <span key={p} className={cn("w-5 h-5 rounded flex items-center justify-center text-white text-xs", PLATFORM_COLORS[p])}>
+                      {PLATFORM_ICONS[p]}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="px-5 py-4">
+                <p className="text-slate-200 text-sm leading-relaxed whitespace-pre-wrap">{post.content}</p>
+              </div>
+
+              {/* Actions */}
+              <div className="flex border-t border-white/8">
+                <button
+                  onClick={() => reject(post.id)}
+                  className="flex-1 flex items-center justify-center gap-2 py-3.5 text-slate-500 hover:text-red-400 hover:bg-red-500/5 transition-all text-sm font-medium"
+                >
+                  <XCircle size={18} />
+                  Откажи
+                </button>
+                <div className="w-px bg-white/8" />
+                <button
+                  onClick={() => approve(post)}
+                  disabled={approving === post.id}
+                  className="flex-1 flex items-center justify-center gap-2 py-3.5 text-brand-green hover:bg-green-500/10 disabled:opacity-50 transition-all text-sm font-bold"
+                >
+                  {approving === post.id ? (
+                    <RefreshCw size={18} className="animate-spin" />
+                  ) : (
+                    <CheckCircle size={18} />
+                  )}
+                  {approving === post.id ? "Публикува се..." : "Одобри и публикувай"}
+                </button>
+              </div>
+            </div>
+          ))}
+
+          {!loading && posts.length > 0 && (
+            <button onClick={() => fetchPosts("pending")} className="flex items-center gap-1.5 text-xs text-slate-600 hover:text-slate-400 transition-colors mx-auto">
+              <RefreshCw size={11} /> Обнови
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* LIBRARY */}
       {tab === "library" && (
-        <div className="space-y-6">
-          <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3 text-amber-400 text-sm">
-            30 готови AI поста на български — кликнете върху пост за да го редактирате и публикувате.
-          </div>
-          {AI_CONTENT_LIBRARY.map((category) => (
-            <div key={category.category} className="bg-dark-800 border border-white/8 rounded-2xl p-5">
-              <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
-                <span>{category.emoji}</span>
-                {category.category}
-                <span className="text-xs text-slate-500 font-normal ml-1">({category.posts.length} поста)</span>
-              </h3>
-              <div className="grid gap-3">
-                {category.posts.map((post, i) => (
-                  <div
-                    key={i}
-                    className="group bg-dark-700 border border-white/5 hover:border-brand-blue/40 rounded-xl p-4 cursor-pointer transition-all"
-                    onClick={() => useLibraryPost(post)}
-                  >
-                    <p className="text-slate-300 text-sm whitespace-pre-wrap line-clamp-3">{post}</p>
-                    <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <span className="text-xs text-brand-blue">Кликни за да използваш →</span>
-                    </div>
-                  </div>
-                ))}
+        <div className="space-y-3">
+          <p className="text-slate-500 text-sm">Кликни на пост → той отива в "За одобрение" → ти преглеждаш и одобряваш.</p>
+          {AI_POSTS.map((post, i) => (
+            <div
+              key={i}
+              onClick={() => queuePost(post.content, post.category)}
+              className="group bg-dark-800 border border-white/8 hover:border-brand-blue/40 rounded-xl p-4 cursor-pointer transition-all"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <span className="text-xs text-brand-blue font-medium mb-1.5 block">{post.category}</span>
+                  <p className="text-slate-300 text-sm leading-relaxed line-clamp-3 whitespace-pre-wrap">{post.content}</p>
+                </div>
+                <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-brand-blue/10 group-hover:bg-brand-blue/20 flex items-center justify-center transition-all">
+                  <Plus size={14} className="text-brand-blue" />
+                </div>
               </div>
             </div>
           ))}
         </div>
       )}
 
-      {/* Compose Tab */}
+      {/* COMPOSE */}
       {tab === "compose" && (
-        <div className="bg-dark-800 border border-white/8 rounded-2xl p-6 space-y-5">
-          <h3 className="text-white font-semibold">Напиши или редактирай пост</h3>
+        <div className="bg-dark-800 border border-white/8 rounded-2xl p-5 space-y-4">
+          <h3 className="text-white font-semibold">Напиши пост</h3>
 
-          {/* Platform selection */}
           <div>
             <label className="text-xs text-slate-400 block mb-2">Платформи</label>
             <div className="flex gap-2 flex-wrap">
               {ALL_PLATFORMS.map((p) => (
                 <button
                   key={p}
-                  onClick={() => togglePlatform(p)}
+                  onClick={() => setSelectedPlatforms((prev) =>
+                    prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p]
+                  )}
                   className={cn(
                     "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all capitalize",
                     selectedPlatforms.includes(p)
                       ? `${PLATFORM_COLORS[p]} text-white`
-                      : "bg-dark-700 text-slate-400 hover:text-white border border-white/10"
+                      : "bg-dark-700 text-slate-400 border border-white/10 hover:text-white"
                   )}
                 >
-                  {PLATFORM_ICONS[p]}
-                  {p}
+                  {PLATFORM_ICONS[p]} {p}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Content */}
-          <div>
-            <label className="text-xs text-slate-400 block mb-2">Съдържание</label>
-            <textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Напишете вашия пост тук..."
-              rows={8}
-              className="w-full px-4 py-3 bg-dark-700 border border-white/10 text-white placeholder-slate-600 text-sm rounded-xl outline-none focus:border-brand-blue transition-colors resize-none"
-            />
-            <div className="text-xs text-slate-600 mt-1 text-right">{content.length} символа</div>
-          </div>
+          <textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="Напишете съдържанието..."
+            rows={7}
+            className="w-full px-4 py-3 bg-dark-700 border border-white/10 text-white placeholder-slate-600 text-sm rounded-xl outline-none focus:border-brand-blue transition-colors resize-none"
+          />
 
-          {/* Schedule */}
           <div>
-            <label className="text-xs text-slate-400 block mb-2">
-              Планиране (незадължително — оставете празно за публикуване сега)
-            </label>
+            <label className="text-xs text-slate-400 block mb-1.5">Планирай за (незадължително)</label>
             <input
               type="datetime-local"
               value={scheduledAt}
@@ -324,95 +348,48 @@ export default function SocialPage() {
             />
           </div>
 
-          {/* Actions */}
           <div className="flex gap-3">
             <button
-              onClick={() => savePost("published")}
-              disabled={posting || !content.trim() || selectedPlatforms.length === 0}
-              className="flex items-center gap-2 px-5 py-2.5 bg-brand-blue hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl text-sm font-semibold transition-all"
+              onClick={saveCompose}
+              disabled={saving || !content.trim()}
+              className="flex items-center gap-2 px-5 py-2.5 bg-brand-blue hover:bg-blue-600 disabled:opacity-50 text-white rounded-xl text-sm font-semibold transition-all"
             >
-              {posting ? <RefreshCw size={15} className="animate-spin" /> : scheduledAt ? <Clock size={15} /> : <Send size={15} />}
-              {scheduledAt ? "Планирай" : "Публикувай сега"}
-            </button>
-            <button
-              onClick={() => savePost("draft")}
-              disabled={posting || !content.trim()}
-              className="flex items-center gap-2 px-4 py-2.5 bg-dark-700 hover:bg-dark-600 disabled:opacity-50 text-slate-300 rounded-xl text-sm transition-all border border-white/10"
-            >
-              Запази чернова
+              {saving ? <RefreshCw size={14} className="animate-spin" /> : scheduledAt ? <Clock size={14} /> : <Send size={14} />}
+              {scheduledAt ? "Планирай" : "Добави за преглед"}
             </button>
           </div>
         </div>
       )}
 
-      {/* Scheduled / Published Tab */}
-      {(tab === "scheduled" || tab === "published") && (
+      {/* PUBLISHED */}
+      {tab === "published" && (
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-slate-400 text-sm">{posts.length} поста</span>
-            <button
-              onClick={() => fetchPosts(tab === "scheduled" ? "scheduled" : "published")}
-              className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-white transition-colors"
-            >
-              <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
-              Обнови
-            </button>
-          </div>
-
-          {loading && (
-            <div className="space-y-3">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="bg-dark-800 border border-white/8 rounded-xl p-4 animate-pulse">
-                  <div className="h-4 bg-dark-700 rounded w-3/4 mb-2" />
-                  <div className="h-3 bg-dark-700 rounded w-1/2" />
-                </div>
-              ))}
-            </div>
-          )}
+          <button onClick={() => fetchPosts("published")} className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-white transition-colors">
+            <RefreshCw size={11} className={loading ? "animate-spin" : ""} /> Обнови
+          </button>
 
           {!loading && posts.length === 0 && (
             <div className="text-center py-12 text-slate-500">
-              <div className="text-3xl mb-3">📭</div>
-              <p>Няма {tab === "scheduled" ? "планирани" : "публикувани"} постове</p>
+              <div className="text-3xl mb-2">📭</div>
+              <p>Все още няма публикувани постове</p>
             </div>
           )}
 
-          {!loading && posts.map((post) => (
+          {posts.map((post) => (
             <div key={post.id} className="bg-dark-800 border border-white/8 rounded-xl p-4">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <p className="text-slate-300 text-sm whitespace-pre-wrap line-clamp-3">{post.content}</p>
-                  <div className="flex items-center gap-3 mt-3 flex-wrap">
-                    <span className={cn("text-xs px-2 py-0.5 rounded-full font-medium", STATUS_CONFIG[post.status].color)}>
-                      {STATUS_CONFIG[post.status].label}
+              <p className="text-slate-300 text-sm line-clamp-3 whitespace-pre-wrap mb-3">{post.content}</p>
+              <div className="flex items-center gap-3 text-xs text-slate-500">
+                <span className="flex items-center gap-1 text-green-400">
+                  <CheckCircle size={11} /> Публикуван
+                </span>
+                {post.published_at && <span>{new Date(post.published_at).toLocaleString("bg-BG")}</span>}
+                <div className="flex gap-1 ml-auto">
+                  {post.platforms.map((p) => (
+                    <span key={p} className={cn("w-4 h-4 rounded flex items-center justify-center text-white", PLATFORM_COLORS[p])}>
+                      {PLATFORM_ICONS[p]}
                     </span>
-                    <div className="flex gap-1">
-                      {post.platforms.map((p) => (
-                        <span key={p} className={cn("w-5 h-5 rounded flex items-center justify-center text-white", PLATFORM_COLORS[p])}>
-                          {PLATFORM_ICONS[p]}
-                        </span>
-                      ))}
-                    </div>
-                    {post.scheduled_at && (
-                      <span className="text-xs text-slate-500 flex items-center gap-1">
-                        <Clock size={10} />
-                        {new Date(post.scheduled_at).toLocaleString("bg-BG")}
-                      </span>
-                    )}
-                    {post.published_at && (
-                      <span className="text-xs text-slate-500 flex items-center gap-1">
-                        <CheckCircle size={10} />
-                        {new Date(post.published_at).toLocaleString("bg-BG")}
-                      </span>
-                    )}
-                  </div>
+                  ))}
                 </div>
-                <button
-                  onClick={() => deletePost(post.id)}
-                  className="text-slate-600 hover:text-red-400 transition-colors flex-shrink-0"
-                >
-                  <Trash2 size={15} />
-                </button>
               </div>
             </div>
           ))}

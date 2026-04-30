@@ -5,7 +5,7 @@ create table if not exists public.social_posts (
   content text not null,
   platforms text[] not null default '{facebook,instagram,linkedin,tiktok}',
   category text not null default 'post',
-  status text not null default 'draft' check (status in ('draft', 'scheduled', 'published', 'failed')),
+  status text not null default 'pending' check (status in ('pending', 'draft', 'scheduled', 'published', 'rejected', 'failed')),
   scheduled_at timestamptz,
   published_at timestamptz,
   media_urls text[] default '{}',
