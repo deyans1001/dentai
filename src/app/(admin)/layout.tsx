@@ -10,6 +10,7 @@ const ADMIN_NAV = [
   { emoji: "🏠", label: "Преглед", href: "/admin" },
   { emoji: "🏥", label: "Клиники", href: "/admin/clinics" },
   { emoji: "👥", label: "Leads", href: "/admin/leads" },
+  { emoji: "📱", label: "Социални мрежи", href: "/admin/social" },
   { emoji: "📊", label: "Маркетинг", href: "/admin/marketing" },
   { emoji: "💰", label: "Финанси", href: "/admin/finance" },
 ];

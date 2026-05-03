@@ -42,7 +42,6 @@ export async function POST(request: NextRequest) {
         .update({
           status: "ACTIVE",
           plan,
-          updated_at: new Date().toISOString(),
         })
         .eq("id", clinicId);
 
@@ -60,9 +59,9 @@ export async function POST(request: NextRequest) {
         currency: "EUR",
         plan,
         stripe_payment_id: session.payment_intent as string,
-        stripe_subscription_id: session.subscription as string,
+        stripe_subscription_id: session.subscription as string ?? null,
         status: "COMPLETED",
-        receipt_url: session.url || undefined,
+        receipt_url: session.url ?? null,
       });
 
       // Get clinic info for email

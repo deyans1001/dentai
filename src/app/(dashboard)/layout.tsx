@@ -11,7 +11,6 @@ const NAV_ITEMS = [
   { emoji: "📅", label: "Часове", href: "/dashboard/appointments" },
   { emoji: "📞", label: "Обаждания", href: "/dashboard/calls" },
   { emoji: "💬", label: "AI Чатбот", href: "/dashboard/chatbot" },
-  { emoji: "📱", label: "Социални мрежи", href: "/dashboard/social" },
   { emoji: "👥", label: "Персонал", href: "/dashboard/staff" },
   { emoji: "⚙️", label: "Настройки", href: "/dashboard/settings" },
 ];
