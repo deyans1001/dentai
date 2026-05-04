@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
       const clinicId = session.metadata?.clinic_id;
-      const plan = session.metadata?.plan as "STARTER" | "PROFESSIONAL" | "ANNUAL";
+      const plan = session.metadata?.plan as "BASIC" | "PRO" | "CLINIC_PLUS";
 
       if (!clinicId || !plan) {
         console.error("Missing metadata in Stripe session");
@@ -47,9 +47,9 @@ export async function POST(request: NextRequest) {
 
       // Determine amount
       const amountMap: Record<string, number> = {
-        STARTER: 299,
-        PROFESSIONAL: 1499,
-        ANNUAL: 2799,
+        BASIC: 199,
+        PRO: 299,
+        CLINIC_PLUS: 449,
       };
 
       // Save payment record

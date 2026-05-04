@@ -15,8 +15,7 @@ const ADMIN_NAV = [
   { emoji: "💰", label: "Финанси", href: "/admin/finance" },
 ];
 
-// Simple admin check - in production use is_admin flag in database
-const ADMIN_EMAIL = "admin@dentai.bg";
+const ADMIN_EMAIL = "deyan.s1001@gmail.com";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();

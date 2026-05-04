@@ -50,6 +50,23 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (error) throw error;
+
+    // Send email notification to admin when post is added to pending review
+    if ((body.status ?? "draft") === "pending") {
+      try {
+        await fetch(`${process.env.NEXT_PUBLIC_APP_URL || "https://dentai-theta.vercel.app"}/api/email`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "social_review",
+            posts: [{ content: body.content, category: body.category || "Пост" }],
+          }),
+        });
+      } catch {
+        // Email failure should not block the post creation
+      }
+    }
+
     return NextResponse.json(data);
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : "Грешка";

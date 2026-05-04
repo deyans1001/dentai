@@ -1,24 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 
+// Фиксирани цени — не се менят
 const PLAN_CONFIGS = {
-  STARTER: {
-    name: "Стартов план",
-    amount: 29900, // €299 in cents
-    currency: "eur",
-    description: "AI рецепционист - Стартов план за дентални клиники",
+  BASIC: {
+    name: "Базов план",
+    amount: 19900, // €199/месец
+    description: "AI рецепционист — Базов план (чатбот, записване 24/7)",
   },
-  PROFESSIONAL: {
-    name: "Професионален план",
-    amount: 149900, // €1499 in cents
-    currency: "eur",
-    description: "AI рецепционист - Професионален план за дентални клиники",
+  PRO: {
+    name: "Про план",
+    amount: 29900, // €299/месец
+    description: "AI рецепционист — Про план (гласов рецепционист + Google Calendar)",
   },
-  ANNUAL: {
-    name: "Годишен план",
-    amount: 279900, // €2799 in cents
-    currency: "eur",
-    description: "AI рецепционист - Годишен план за дентални клиники (12 месеца)",
+  CLINIC_PLUS: {
+    name: "Клиника+ план",
+    amount: 44900, // €449/месец
+    description: "AI рецепционист — Клиника+ план (до 3 клиники + SMS)",
   },
 } as const;
 
@@ -31,51 +29,42 @@ export async function POST(request: NextRequest) {
     const { clinicId, plan } = body;
 
     if (!clinicId || !plan) {
-      return NextResponse.json(
-        { error: "Липсват данни за клиниката или плана" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Липсват данни за клиниката или плана" }, { status: 400 });
     }
 
     const planConfig = PLAN_CONFIGS[plan];
     if (!planConfig) {
-      return NextResponse.json(
-        { error: "Невалиден план" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Невалиден план" }, { status: 400 });
     }
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://dentai-theta.vercel.app";
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: [
         {
           price_data: {
-            currency: planConfig.currency,
+            currency: "eur",
             product_data: {
               name: planConfig.name,
               description: planConfig.description,
             },
             unit_amount: planConfig.amount,
+            recurring: { interval: "month" },
           },
           quantity: 1,
         },
       ],
-      mode: "payment",
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/settings?payment=success&plan=${plan}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/#pricing`,
-      metadata: {
-        clinic_id: clinicId,
-        plan,
-      },
+      mode: "subscription",
+      success_url: `${appUrl}/dashboard/settings?payment=success&plan=${plan}`,
+      cancel_url: `${appUrl}/#pricing`,
+      metadata: { clinic_id: clinicId, plan },
       locale: "bg",
     });
 
     return NextResponse.json({ url: session.url });
   } catch (error) {
     console.error("Stripe checkout error:", error);
-    return NextResponse.json(
-      { error: "Грешка при създаване на плащане. Моля, опитайте отново." },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Грешка при създаване на плащане. Моля, опитайте отново." }, { status: 500 });
   }
 }
