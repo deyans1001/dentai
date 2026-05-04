@@ -175,87 +175,47 @@ function RegisterForm() {
     setFieldErrors({});
 
     try {
-      const supabase = createClient();
-
-      // Create auth user
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-      });
-
-      if (signUpError) {
-        if (signUpError.message.toLowerCase().includes("already registered") || signUpError.message.toLowerCase().includes("already exists")) {
-          setError("Този имейл вече е регистриран. Опитайте с друг или влезте.");
-        } else if (signUpError.message.toLowerCase().includes("password")) {
-          setError("Паролата трябва да е поне 6 символа.");
-        } else if (signUpError.message.toLowerCase().includes("email")) {
-          setError("Невалиден имейл адрес.");
-        } else {
-          setError("Грешка при регистрация: " + signUpError.message);
-        }
-        return;
-      }
-
-      if (!authData.user) {
-        setError("Грешка при създаване на акаунт. Моля, опитайте отново.");
-        return;
-      }
-
-      // Insert clinic
-      const { data: clinic, error: clinicError } = await supabase
-        .from("clinics")
-        .insert({
-          user_id: authData.user.id,
-          name: clinicName,
-          owner_name: ownerName,
+      // Use server-side API — uses service role key, bypasses RLS and email confirmation
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           email,
+          password,
+          clinicName,
+          ownerName,
           phone,
           city,
           address,
           website: website || null,
-          working_hours: workingHours,
+          workingHours,
           services: selectedServices,
           plan: selectedPlan,
-          status: "TRIAL",
-        })
-        .select("id")
-        .single();
+          staff,
+        }),
+      });
 
-      if (clinicError || !clinic) {
-        setError("Грешка при създаване на клиника. Моля, опитайте отново.");
+      const data = await res.json() as { success?: boolean; clinicId?: string; error?: string };
+
+      if (!res.ok || !data.success) {
+        const msg = data.error || "Грешка при регистрация";
+        if (msg.includes("вече е регистриран") || msg.includes("already")) {
+          setError("Този имейл вече е регистриран. Влезте в акаунта си.");
+        } else if (msg.includes("password") || msg.includes("парол")) {
+          setError("Паролата трябва да е поне 6 символа.");
+        } else {
+          setError(msg);
+        }
         return;
       }
 
-      // Store clinicId for Stripe
-      localStorage.setItem("clinicId", clinic.id);
-
-      // Insert staff
-      const staffInserts = staff
-        .filter((s) => s.name.trim())
-        .map((s) => ({
-          clinic_id: clinic.id,
-          name: s.name,
-          role: s.role,
-          working_days: s.working_days,
-          working_hours: s.working_hours,
-          is_active: true,
-        }));
-
-      if (staffInserts.length > 0) {
-        await supabase.from("staff").insert(staffInserts);
+      if (data.clinicId) {
+        localStorage.setItem("clinicId", data.clinicId);
       }
 
-      // Send welcome email
-      await fetch("/api/email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: "welcome",
-          to: email,
-          clinicName,
-          ownerName,
-        }),
-      });
+      // Sign in automatically after registration
+      const supabase = createClient();
+      await supabase.auth.signInWithPassword({ email, password });
 
       router.push("/dashboard");
     } catch {
