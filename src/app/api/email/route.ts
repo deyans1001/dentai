@@ -118,13 +118,17 @@ export async function POST(request: NextRequest) {
   try {
     const resend = new Resend(process.env.RESEND_API_KEY);
     const body = await request.json() as {
-      type: "payment_confirmation" | "welcome" | "social_review";
+      type: "payment_confirmation" | "welcome" | "social_review" | "contact";
       to?: string;
       clinicName?: string;
       ownerName?: string;
       plan?: string;
       amount?: number;
       posts?: { content: string; category: string }[];
+      name?: string;
+      email?: string;
+      subject?: string;
+      message?: string;
     };
 
     const { type } = body;
@@ -140,6 +144,16 @@ export async function POST(request: NextRequest) {
       if (!body.clinicName) return NextResponse.json({ error: "Липсват данни" }, { status: 400 });
       subject = `🦷 Добре дошли в DentAI, ${body.clinicName}!`;
       html = getWelcomeHtml(body.clinicName, body.ownerName || body.clinicName);
+    } else if (type === "contact") {
+      subject = `📩 Ново съобщение от ${body.name || "непознат"} — DentAI`;
+      html = `<div style="font-family:Arial;background:#070d1b;color:#e2e8f0;padding:32px;border-radius:12px;">
+        <h2 style="color:#3b82f6;">📩 Ново съобщение от сайта</h2>
+        <p><strong>От:</strong> ${body.name} (${body.email})</p>
+        <p><strong>Тема:</strong> ${body.subject || "—"}</p>
+        <hr style="border-color:rgba(255,255,255,0.1);margin:16px 0;">
+        <p style="white-space:pre-wrap;">${body.message}</p>
+      </div>`;
+      to = ADMIN_EMAIL;
     } else if (type === "social_review") {
       const posts = body.posts || [];
       subject = `📱 ${posts.length} нови поста за одобрение — DentAI`;
