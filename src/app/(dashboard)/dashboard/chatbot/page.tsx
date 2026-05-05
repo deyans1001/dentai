@@ -90,7 +90,7 @@ export default function ChatbotPage() {
             <ChatWidget
               key={sessionId}
               clinicId={clinic.id}
-              className="h-[calc(100vh-280px)] min-h-[400px]"
+              className="h-[500px] lg:h-[calc(100vh-260px)]"
             />
           ) : (
             <div className="h-[400px] bg-dark-800 border border-white/8 rounded-2xl flex items-center justify-center">

@@ -252,7 +252,7 @@ export default function DashboardPage() {
         <p className="text-slate-400 text-sm mb-4">
           Попитайте за статистики, анализи или информация за клиниката
         </p>
-        {clinic && <ChatWidget clinicId={clinic.id} className="max-h-[400px]" />}
+        {clinic && <ChatWidget clinicId={clinic.id} className="h-[420px]" />}
       </div>
     </div>
   );
