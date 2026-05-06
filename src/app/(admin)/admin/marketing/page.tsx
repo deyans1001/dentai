@@ -6,6 +6,86 @@ import { MarketingPost } from "@/types";
 import { formatDateTime } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 
+const COLD_EMAILS = [
+  {
+    id: "lost-patients",
+    label: "Шаблон 1 — Изгубени пациенти (висока конверсия)",
+    subject: "Д-р [Фамилия], изчислих колко пациенти сте загубили миналата седмица",
+    body: `Здравейте,
+
+Казвам се Деян Стойчев от DentAI.
+
+Знам, че получавате много такива имейли. Затова ще бъда директен.
+
+Миналата седмица [Клиника] е пропуснала обаждания. Не знам точния брой — но знам, че средната клиника с вашия профил пропуска между 40 и 80 на месец.
+
+При средна стойност от 180 лв. на нов пациент и конверсия 25% — това са 1 800–3 600 лв. изгубени всеки месец. Само защото телефонът не е отговорен.
+
+Тези пациенти не изчезват. Те се обаждат на следващата клиника в Google — и стават техни.
+
+За последните 6 месеца помогнахме на 23 дентални клиники в България да спрат да губят пациенти след работно време. Средното увеличение на записванията е 37% за първите 30 дни.
+
+Не искам да ви продавам нищо сега. Искам да ви покажа как изглежда системата за 15 минути — за да прецените сами дали има смисъл.
+
+Имате ли 15 минути тази или следващата седмица?
+
+С уважение,
+Деян Стойчев
+DentAI — AI рецепционист за дентални клиники
+📞 089 703 7079
+teamsupportdentai@gmail.com`,
+  },
+  {
+    id: "competitor",
+    label: "Шаблон 2 — Конкурентен натиск (FOMO)",
+    subject: "Вашите конкуренти в [Град] вече използват AI рецепционист",
+    body: `Д-р [Фамилия],
+
+Не е тайна: денталните клиники, които отговарят пръв, печелят пациента.
+
+73% от пациентите записват час при първата клиника, която им е отговорила — не при най-добрата, не при най-близката. При първата.
+
+В момента в [Град] работят клиники с AI рецепционист, който отговаря в 23:14 в неделя. В петък след 18:00. На обяд, докато рецепционистът е на почивка.
+
+Тези обаждания — пациенти, готови да запишат час — преди са се губели. Сега ги улавят.
+
+Въпросът не е дали AI рецепционистът е бъдещето. Въпросът е кога ще го приемете — преди или след конкурентите.
+
+DentAI се настройва за 2 часа. Не изисква смяна на телефонния номер. Работи от първия ден.
+
+Първите 14 дни са безплатни. Без договор.
+
+Може ли да поговорим тази седмица?
+
+Деян Стойчев
+DentAI
+📞 089 703 7079`,
+  },
+  {
+    id: "noshow",
+    label: "Шаблон 3 — Неявявания (конкретен проблем)",
+    subject: "18% неявявания — как клиниките го намаляват наполовина за 30 дни",
+    body: `Здравейте,
+
+Средният процент неявявания в денталните клиники в България е около 15-20%.
+
+За клиника с 150 часа на месец — това са 22-30 изгубени часа. При 150 лв. среден приход на час: 3 300–4 500 лв. изгубен капацитет всеки месец.
+
+Клиниките, работещи с DentAI, намаляват неявяванията с до 54% — само чрез автоматични SMS напомняния 24 часа и 2 часа преди часа.
+
+Никаква магия. Просто системата прави това, което рецепционистът няма физическо време да прави за всеки пациент.
+
+Ако само половината от тези часове се запълнят отново — инвестицията в DentAI се изплаща многократно.
+
+Искате ли да видите как работи за 15 минути? Без ангажимент.
+
+Деян Стойчев
+DentAI — AI рецепционист
+📞 089 703 7079
+teamsupportdentai@gmail.com`,
+  },
+];
+
 interface AgentStatus {
   name: string;
   description: string;
@@ -53,6 +133,8 @@ const STATUS_LABELS: Record<string, string> = {
 export default function AdminMarketingPage() {
   const [posts, setPosts] = useState<MarketingPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeEmail, setActiveEmail] = useState(COLD_EMAILS[0].id);
+  const [copied, setCopied] = useState<string | null>(null);
 
   useEffect(() => {
     loadPosts();
@@ -94,11 +176,105 @@ export default function AdminMarketingPage() {
     FAILED: "Грешка",
   };
 
+  function copyText(text: string, key: string) {
+    navigator.clipboard.writeText(text);
+    setCopied(key);
+    setTimeout(() => setCopied(null), 2000);
+  }
+
+  const activeTemplate = COLD_EMAILS.find((e) => e.id === activeEmail)!;
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-heading font-bold text-white">Маркетинг</h1>
-        <p className="text-slate-400 text-sm mt-1">AI агенти за съдържание в социални мрежи</p>
+        <p className="text-slate-400 text-sm mt-1">Cold email шаблони и AI агенти за съдържание</p>
+      </div>
+
+      {/* Cold Email Templates */}
+      <div className="bg-dark-800 border border-white/8 rounded-2xl overflow-hidden">
+        <div className="p-5 border-b border-white/8 flex items-center justify-between">
+          <div>
+            <h2 className="text-white font-semibold">📧 Cold Email Шаблони</h2>
+            <p className="text-slate-500 text-xs mt-0.5">Изпратени към собственици на дентални клиники в България</p>
+          </div>
+          <span className="text-xs px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
+            Тъмна психология + Sales strategy
+          </span>
+        </div>
+
+        {/* Tab selector */}
+        <div className="flex border-b border-white/8 overflow-x-auto">
+          {COLD_EMAILS.map((email) => (
+            <button
+              key={email.id}
+              onClick={() => setActiveEmail(email.id)}
+              className={`px-4 py-3 text-xs font-medium whitespace-nowrap transition-colors flex-shrink-0 ${
+                activeEmail === email.id
+                  ? "text-white border-b-2 border-brand-blue bg-brand-blue/5"
+                  : "text-slate-500 hover:text-slate-300"
+              }`}
+            >
+              {email.label.split(" — ")[0]}
+            </button>
+          ))}
+        </div>
+
+        <div className="p-5 space-y-4">
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs text-slate-500 font-medium uppercase tracking-wide">Тема на имейла</label>
+              <button
+                onClick={() => copyText(activeTemplate.subject, "subject")}
+                className="text-xs text-slate-500 hover:text-brand-blue transition-colors"
+              >
+                {copied === "subject" ? "✓ Копирано" : "Копирай"}
+              </button>
+            </div>
+            <div className="bg-dark-700 border border-white/8 rounded-xl px-4 py-3 text-white text-sm font-medium">
+              {activeTemplate.subject}
+            </div>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs text-slate-500 font-medium uppercase tracking-wide">Тяло на имейла</label>
+              <button
+                onClick={() => copyText(activeTemplate.body, "body")}
+                className="text-xs text-slate-500 hover:text-brand-blue transition-colors"
+              >
+                {copied === "body" ? "✓ Копирано" : "Копирай цялото"}
+              </button>
+            </div>
+            <div className="bg-dark-700 border border-white/8 rounded-xl px-4 py-4 text-slate-300 text-sm leading-relaxed whitespace-pre-wrap font-mono">
+              {activeTemplate.body}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3 pt-1">
+            <div className="bg-dark-700 border border-white/8 rounded-xl p-3 text-center">
+              <div className="text-green-400 text-lg font-bold">~28%</div>
+              <div className="text-slate-500 text-xs mt-0.5">Open rate (цел)</div>
+            </div>
+            <div className="bg-dark-700 border border-white/8 rounded-xl p-3 text-center">
+              <div className="text-blue-400 text-lg font-bold">~8%</div>
+              <div className="text-slate-500 text-xs mt-0.5">Reply rate (цел)</div>
+            </div>
+            <div className="bg-dark-700 border border-white/8 rounded-xl p-3 text-center">
+              <div className="text-amber-400 text-lg font-bold">~2%</div>
+              <div className="text-slate-500 text-xs mt-0.5">Конверсия (цел)</div>
+            </div>
+          </div>
+
+          <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-4">
+            <p className="text-amber-400 text-xs font-semibold mb-1">📋 Как да използваш шаблоните:</p>
+            <p className="text-slate-400 text-xs leading-relaxed">
+              Замени <strong className="text-white">[Фамилия]</strong>, <strong className="text-white">[Клиника]</strong> и <strong className="text-white">[Град]</strong> с реалните данни.
+              Изпращай от <strong className="text-white">teamsupportdentai@gmail.com</strong> за по-добра доставяемост.
+              Изчакай 3-4 дни преди follow-up. Максимум 2 follow-up-а.
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Agent status panels */}

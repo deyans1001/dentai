@@ -1,6 +1,36 @@
 import { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { createClient } from "@supabase/supabase-js";
+
+export const revalidate = 3600;
+
+interface DbPost {
+  title: string;
+  content: string;
+  excerpt: string;
+  category: string;
+  published_at: string;
+  read_time_minutes: number;
+}
+
+async function getDbPost(slug: string): Promise<DbPost | null> {
+  try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    const { data } = await supabase
+      .from("blog_posts")
+      .select("title, content, excerpt, category, published_at, read_time_minutes")
+      .eq("slug", slug)
+      .eq("status", "published")
+      .single();
+    return data as DbPost | null;
+  } catch {
+    return null;
+  }
+}
 
 const POSTS: Record<string, { title: string; date: string; readTime: string; category: string; content: string }> = {
   "zagubeni-patsienti-sled-18": {
@@ -216,16 +246,33 @@ AI рецепционистът е навигацията за телефонн�
 };
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+  const dbPost = await getDbPost(params.slug);
+  if (dbPost) return { title: `${dbPost.title} | DentAI Блог`, description: dbPost.excerpt };
   const post = POSTS[params.slug];
   if (!post) return { title: "Не е намерено | DentAI" };
   return { title: `${post.title} | DentAI Блог`, description: post.content.slice(0, 160) };
 }
 
-export default function BlogPostPage({ params }: { params: { slug: string } }) {
-  const post = POSTS[params.slug];
-  if (!post) notFound();
+export default async function BlogPostPage({ params }: { params: { slug: string } }) {
+  // Try DB first
+  const dbPost = await getDbPost(params.slug);
 
-  const paragraphs = post.content.split("\n\n");
+  // Normalize to common shape
+  const postData = dbPost
+    ? {
+        title: dbPost.title,
+        category: dbPost.category,
+        date: new Date(dbPost.published_at).toLocaleDateString("bg-BG", { day: "numeric", month: "long", year: "numeric" }),
+        readTime: `${dbPost.read_time_minutes} мин`,
+        content: dbPost.content,
+      }
+    : POSTS[params.slug]
+    ? POSTS[params.slug]
+    : null;
+
+  if (!postData) notFound();
+
+  const paragraphs = postData.content.split("\n\n");
 
   return (
     <main className="min-h-screen bg-dark-900 py-20 px-4">
@@ -237,14 +284,14 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
         <article>
           <div className="flex items-center gap-3 mb-4">
             <span className="text-xs px-2.5 py-1 rounded-full bg-brand-blue/10 border border-brand-blue/20 text-brand-blue font-medium">
-              {post.category}
+              {postData.category}
             </span>
-            <span className="text-xs text-slate-500">{post.date}</span>
-            <span className="text-xs text-slate-500">· {post.readTime} четене</span>
+            <span className="text-xs text-slate-500">{postData.date}</span>
+            <span className="text-xs text-slate-500">· {postData.readTime} четене</span>
           </div>
 
           <h1 className="text-3xl lg:text-4xl font-heading font-bold text-white mb-8 leading-tight">
-            {post.title}
+            {postData.title}
           </h1>
 
           <div className="prose prose-invert max-w-none space-y-5">

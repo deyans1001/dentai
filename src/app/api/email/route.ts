@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
   try {
     const resend = new Resend(process.env.RESEND_API_KEY);
     const body = await request.json() as {
-      type: "payment_confirmation" | "welcome" | "social_review" | "contact";
+      type: "payment_confirmation" | "welcome" | "social_review" | "contact" | "blog_review";
       to?: string;
       clinicName?: string;
       ownerName?: string;
@@ -129,6 +129,14 @@ export async function POST(request: NextRequest) {
       email?: string;
       subject?: string;
       message?: string;
+      // blog_review fields
+      postId?: string;
+      title?: string;
+      excerpt?: string;
+      content?: string;
+      category?: string;
+      approveUrl?: string;
+      rejectUrl?: string;
     };
 
     const { type } = body;
@@ -153,6 +161,47 @@ export async function POST(request: NextRequest) {
         <hr style="border-color:rgba(255,255,255,0.1);margin:16px 0;">
         <p style="white-space:pre-wrap;">${body.message}</p>
       </div>`;
+      to = ADMIN_EMAIL;
+    } else if (type === "blog_review") {
+      subject = `📝 Нова статия за одобрение: "${body.title}" — DentAI`;
+      html = `<!DOCTYPE html>
+<html lang="bg"><head><meta charset="UTF-8"><title>Нова статия за одобрение</title></head>
+<body style="margin:0;padding:0;background:#070d1b;font-family:Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#070d1b;">
+    <tr><td align="center" style="padding:40px 20px;">
+      <table width="650" cellpadding="0" cellspacing="0" style="background:#0a1024;border-radius:16px;border:1px solid rgba(255,255,255,0.08);max-width:650px;">
+        <tr><td style="background:linear-gradient(135deg,#1a3a2a,#0a1024);padding:32px;text-align:center;">
+          <div style="font-size:40px;margin-bottom:12px;">📝</div>
+          <h1 style="color:#22c55e;font-size:22px;margin:0;">Нова статия чака одобрение</h1>
+          <p style="color:#94a3b8;margin:8px 0 0;font-size:13px;">Категория: ${body.category}</p>
+        </td></tr>
+        <tr><td style="padding:32px;">
+          <h2 style="color:#e2e8f0;font-size:20px;margin:0 0 12px;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:12px;">${body.title}</h2>
+          <p style="color:#94a3b8;font-size:14px;font-style:italic;margin:0 0 20px;">${body.excerpt}</p>
+          <div style="background:#0c1329;border-radius:10px;padding:20px;border:1px solid rgba(255,255,255,0.06);max-height:300px;overflow:hidden;margin-bottom:24px;">
+            <p style="color:#cbd5e1;font-size:13px;line-height:1.8;margin:0;white-space:pre-wrap;">${(body.content || "").slice(0, 800)}${(body.content || "").length > 800 ? "..." : ""}</p>
+          </div>
+          <table width="100%"><tr>
+            <td width="48%">
+              <a href="${body.rejectUrl}" style="display:block;background:#1a0a0a;border:2px solid #ef4444;color:#ef4444;text-decoration:none;padding:14px;border-radius:10px;font-size:15px;font-weight:bold;text-align:center;">
+                ❌ Отхвърли
+              </a>
+            </td>
+            <td width="4%"></td>
+            <td width="48%">
+              <a href="${body.approveUrl}" style="display:block;background:#22c55e;color:#000;text-decoration:none;padding:14px;border-radius:10px;font-size:15px;font-weight:bold;text-align:center;">
+                ✅ Одобри и публикувай
+              </a>
+            </td>
+          </tr></table>
+        </td></tr>
+        <tr><td style="background:#070d1b;padding:20px;text-align:center;border-top:1px solid rgba(255,255,255,0.05);">
+          <p style="color:#475569;font-size:12px;margin:0;">© 2025 DentAI Admin</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
       to = ADMIN_EMAIL;
     } else if (type === "social_review") {
       const posts = body.posts || [];

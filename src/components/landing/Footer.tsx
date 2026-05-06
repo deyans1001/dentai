@@ -41,17 +41,13 @@ export default function Footer() {
               </a>
             </div>
             <div className="flex gap-3 mt-4">
-              <a href="https://facebook.com" target="_blank" rel="noopener noreferrer"
-                className="w-8 h-8 rounded-lg bg-dark-700 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white hover:border-white/30 transition-all text-xs font-bold">
+              <a href="https://www.facebook.com/dentai.bg/" target="_blank" rel="noopener noreferrer"
+                className="w-8 h-8 rounded-lg bg-dark-700 border border-white/10 flex items-center justify-center text-slate-400 hover:text-blue-400 hover:border-blue-400/30 transition-all text-xs font-bold">
                 f
               </a>
-              <a href="https://instagram.com" target="_blank" rel="noopener noreferrer"
-                className="w-8 h-8 rounded-lg bg-dark-700 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white hover:border-white/30 transition-all text-xs">
+              <a href="https://www.instagram.com/dentai.bg/" target="_blank" rel="noopener noreferrer"
+                className="w-8 h-8 rounded-lg bg-dark-700 border border-white/10 flex items-center justify-center text-slate-400 hover:text-pink-400 hover:border-pink-400/30 transition-all text-xs font-bold">
                 ig
-              </a>
-              <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer"
-                className="w-8 h-8 rounded-lg bg-dark-700 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white hover:border-white/30 transition-all text-xs">
-                in
               </a>
             </div>
           </div>
