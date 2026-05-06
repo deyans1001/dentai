@@ -94,6 +94,73 @@ interface AgentStatus {
   nextRun: string;
 }
 
+const OUTREACH_CLINICS = [
+  // SOFIA
+  { name: "ЕО Дент", city: "София", phone: "0888 500 522", email: "", status: "Нов" },
+  { name: "M3 Dent", city: "София", phone: "+359 87 999 12 15", email: "info@m3dent.com", status: "Нов" },
+  { name: "Немска Дентална Клиника (DDK)", city: "София", phone: "+359 899 077 916", email: "office@ddk.bg", status: "Нов" },
+  { name: "DmClinic", city: "София", phone: "0899 50 60 70", email: "dmclinicsofia@gmail.com", status: "Нов" },
+  { name: "Медstom Dental Clinic", city: "София", phone: "+359 2 981 00 00", email: "marketing@medstom.com", status: "Нов" },
+  { name: "Kavident Dental Clinic", city: "София", phone: "+359 887 92 57 37", email: "", status: "Нов" },
+  { name: "Bulgaria Dent", city: "София", phone: "02 854 8016", email: "", status: "Нов" },
+  { name: "B-dent", city: "София", phone: "+359 878 335 889", email: "clinic@b-dent.bg", status: "Нов" },
+  { name: "MG Dental Clinic", city: "София", phone: "+359 886 103 222", email: "dentalclinicmg@gmail.com", status: "Нов" },
+  { name: "Dr. Cvety", city: "София", phone: "0879 010 112", email: "info@drcvety.com", status: "Нов" },
+  { name: "NuriDent", city: "София", phone: "0887 77 07 03", email: "contact@nurident.com", status: "Нов" },
+  { name: "Емдент", city: "София", phone: "+359 882 306 084", email: "", status: "Нов" },
+  { name: "Sofia Implant Centre", city: "София", phone: "", email: "", status: "Нов" },
+  { name: "ProDent Clinic Sofia", city: "София", phone: "", email: "", status: "Нов" },
+  { name: "Noradent", city: "София", phone: "", email: "", status: "Нов" },
+  { name: "SF Dent", city: "София", phone: "", email: "", status: "Нов" },
+  { name: "Voeva Dental", city: "София", phone: "", email: "", status: "Нов" },
+  { name: "Diamond Smile", city: "София", phone: "", email: "", status: "Нов" },
+  // PLOVDIV
+  { name: "Superdent", city: "Пловдив", phone: "+359 32 64-84-84", email: "", status: "Нов" },
+  { name: "MIG DENT Dental Center", city: "Пловдив", phone: "+359 89 342 5121", email: "", status: "Нов" },
+  { name: "Dente Dental Studio", city: "Пловдив", phone: "", email: "hello@dente.bg", status: "Нов" },
+  { name: "Dr Genchev", city: "Пловдив", phone: "+359 32 266 089", email: "", status: "Нов" },
+  { name: "BelDent", city: "Пловдив", phone: "", email: "", status: "Нов" },
+  // VARNA
+  { name: "Medica 3 Dent", city: "Варна", phone: "0896 865 375", email: "", status: "Нов" },
+  { name: "Dr. Boneva Dental Clinic", city: "Варна", phone: "+359 877 88 68 16", email: "drbonevadentist@abv.bg", status: "Нов" },
+  { name: "iDent Dental Practice", city: "Варна", phone: "", email: "", status: "Нов" },
+  { name: "Chayka Dental", city: "Варна", phone: "+359 888 310 106", email: "info@chaykadental.com", status: "Нов" },
+  { name: "Farmadent Dental Centers", city: "Варна", phone: "052 647 364", email: "", status: "Нов" },
+  { name: "Medicare Dental Center", city: "Варна", phone: "", email: "", status: "Нов" },
+  { name: "Dr. Chaushev Dental Clinic", city: "Варна", phone: "", email: "", status: "Нов" },
+  // BURGAS
+  { name: "Dental Center Burgas", city: "Бургас", phone: "056/83-19-39", email: "dc1_bs@mail.bg", status: "Нов" },
+  { name: "Dentamed", city: "Бургас", phone: "", email: "", status: "Нов" },
+  { name: "Kuneva Dental", city: "Бургас", phone: "", email: "", status: "Нов" },
+  // PLEVEN
+  { name: "Dental-Smile OOD", city: "Плевен", phone: "0897 666 111", email: "", status: "Нов" },
+  { name: "Tandem-Dent", city: "Плевен", phone: "0878 446 681", email: "", status: "Нов" },
+  { name: "Ivadent", city: "Плевен", phone: "0887 399 890", email: "", status: "Нов" },
+  { name: "Bogdanov Dental", city: "Плевен", phone: "", email: "", status: "Нов" },
+  // RUSE
+  { name: "Dentalna Klinika Dukovi", city: "Русе", phone: "+359 82 507 505", email: "", status: "Нов" },
+  { name: "Dental Clinic Odontoya", city: "Русе", phone: "082 87 98 79", email: "", status: "Нов" },
+  { name: "Dental Center 1 Ruse", city: "Русе", phone: "+359 82 82 37 97", email: "dentalruse@abv.bg", status: "Нов" },
+  // SHUMEN
+  { name: "MiR DENT Dental Center", city: "Шумен", phone: "0895 734 603", email: "mirdent12@gmail.com", status: "Нов" },
+  { name: "NK Dental Clinic", city: "Шумен", phone: "", email: "", status: "Нов" },
+  { name: "Dental Clinic DOKSA", city: "Шумен", phone: "", email: "", status: "Нов" },
+  { name: "Smile Dental Clinic Shumen", city: "Шумен", phone: "", email: "", status: "Нов" },
+  // DOBRICH
+  { name: "Dental Cabinet Dr. Bozhilov", city: "Добрич", phone: "+359 58/82 80 65", email: "karaood@abv.bg", status: "Нов" },
+  { name: "Dental Cabinet Dr. Vasilev", city: "Добрич", phone: "+359 888 63 82", email: "vasilevdent@abv.bg", status: "Нов" },
+  { name: "Denta Vision OOD", city: "Добрич", phone: "0896 63 06 55", email: "", status: "Нов" },
+  { name: "Smart Dent Dobrich", city: "Добрич", phone: "", email: "", status: "Нов" },
+  // BLAGOEVGRAD
+  { name: "City Dental Studio", city: "Благоевград", phone: "088 693 0507", email: "", status: "Нов" },
+  { name: "Dental Clinic LIFE", city: "Благоевград", phone: "073 88 55 58", email: "", status: "Нов" },
+  { name: "Dental Clinic Korchev", city: "Благоевград", phone: "", email: "", status: "Нов" },
+  { name: "Denta Face Clinic", city: "Благоевград", phone: "", email: "", status: "Нов" },
+  { name: "Dr. Tsintsarov", city: "Благоевград", phone: "", email: "", status: "Нов" },
+  // STARA ZAGORA
+  { name: "SD Clinic", city: "Стара Загора", phone: "", email: "sd_clinic@abv.bg", status: "Нов" },
+];
+
 const AGENTS: AgentStatus[] = [
   {
     name: "Agent 1 — Изследване",
@@ -135,6 +202,12 @@ export default function AdminMarketingPage() {
   const [loading, setLoading] = useState(true);
   const [activeEmail, setActiveEmail] = useState(COLD_EMAILS[0].id);
   const [copied, setCopied] = useState<string | null>(null);
+  const [cityFilter, setCityFilter] = useState("Всички");
+  const [statusFilter, setStatusFilter] = useState<Record<string, string>>({});
+  const [mainTab, setMainTab] = useState<"emails" | "clinics">("emails");
+
+  const cities = ["Всички", ...Array.from(new Set(OUTREACH_CLINICS.map((c) => c.city)))];
+  const filteredClinics = cityFilter === "Всички" ? OUTREACH_CLINICS : OUTREACH_CLINICS.filter((c) => c.city === cityFilter);
 
   useEffect(() => {
     loadPosts();
@@ -274,6 +347,96 @@ export default function AdminMarketingPage() {
               Изчакай 3-4 дни преди follow-up. Максимум 2 follow-up-а.
             </p>
           </div>
+        </div>
+      </div>
+
+      {/* Outreach clinic list */}
+      <div className="bg-dark-800 border border-white/8 rounded-2xl overflow-hidden">
+        <div className="p-5 border-b border-white/8 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h2 className="text-white font-semibold">🏥 Списък за Outreach ({OUTREACH_CLINICS.length} клиники)</h2>
+            <p className="text-slate-500 text-xs mt-0.5">Дентални клиники в България — готови за cold email кампания</p>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            {cities.map((city) => (
+              <button
+                key={city}
+                onClick={() => setCityFilter(city)}
+                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                  cityFilter === city
+                    ? "bg-brand-blue text-white"
+                    : "bg-dark-700 text-slate-400 hover:text-white border border-white/8"
+                }`}
+              >
+                {city}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-white/8 bg-dark-700/50">
+                <th className="text-left px-4 py-3 text-slate-500 font-medium text-xs">#</th>
+                <th className="text-left px-4 py-3 text-slate-500 font-medium text-xs">Клиника</th>
+                <th className="text-left px-4 py-3 text-slate-500 font-medium text-xs">Град</th>
+                <th className="text-left px-4 py-3 text-slate-500 font-medium text-xs">Телефон</th>
+                <th className="text-left px-4 py-3 text-slate-500 font-medium text-xs">Имейл</th>
+                <th className="text-left px-4 py-3 text-slate-500 font-medium text-xs">Статус</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {filteredClinics.map((clinic, i) => {
+                const key = `${clinic.name}-${clinic.city}`;
+                const status = statusFilter[key] || clinic.status;
+                const statusColors: Record<string, string> = {
+                  "Нов": "bg-slate-500/20 text-slate-400",
+                  "Изпратен": "bg-blue-500/20 text-blue-400",
+                  "Отговорил": "bg-green-500/20 text-green-400",
+                  "Неинтересен": "bg-red-500/20 text-red-400",
+                };
+                return (
+                  <tr key={key} className="hover:bg-white/2 transition-colors">
+                    <td className="px-4 py-3 text-slate-600 text-xs">{i + 1}</td>
+                    <td className="px-4 py-3 text-white font-medium">{clinic.name}</td>
+                    <td className="px-4 py-3 text-slate-400">{clinic.city}</td>
+                    <td className="px-4 py-3">
+                      {clinic.phone ? (
+                        <a href={`tel:${clinic.phone.replace(/\s/g, "")}`} className="text-brand-blue hover:text-blue-400 transition-colors text-xs">
+                          {clinic.phone}
+                        </a>
+                      ) : <span className="text-slate-600 text-xs">—</span>}
+                    </td>
+                    <td className="px-4 py-3">
+                      {clinic.email ? (
+                        <a href={`mailto:${clinic.email}`} className="text-brand-blue hover:text-blue-400 transition-colors text-xs">
+                          {clinic.email}
+                        </a>
+                      ) : <span className="text-slate-600 text-xs">—</span>}
+                    </td>
+                    <td className="px-4 py-3">
+                      <select
+                        value={status}
+                        onChange={(e) => setStatusFilter((prev) => ({ ...prev, [key]: e.target.value }))}
+                        className={`text-xs px-2 py-1 rounded-full border-0 outline-none cursor-pointer ${statusColors[status] || "bg-slate-500/20 text-slate-400"}`}
+                      >
+                        <option value="Нов">Нов</option>
+                        <option value="Изпратен">Изпратен</option>
+                        <option value="Отговорил">Отговорил</option>
+                        <option value="Неинтересен">Неинтересен</option>
+                      </select>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="p-4 border-t border-white/8 flex items-center justify-between">
+          <p className="text-slate-500 text-xs">Показани: {filteredClinics.length} клиники</p>
+          <p className="text-slate-600 text-xs">Статусите се запазват само за тази сесия — добави база данни за постоянно съхранение</p>
         </div>
       </div>
 
