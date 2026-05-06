@@ -4,7 +4,9 @@ import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
-import { Menu, X, LogOut } from "lucide-react";
+import { Menu, X, LogOut, ShieldCheck } from "lucide-react";
+
+const ADMIN_EMAIL = "deyan.s1001@gmail.com";
 
 const NAV_ITEMS = [
   { emoji: "📊", label: "Табло", href: "/dashboard" },
@@ -20,6 +22,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -29,6 +32,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         router.push("/login");
       } else {
         setAuthChecked(true);
+        setIsAdmin(session.user.email === ADMIN_EMAIL);
       }
     };
     checkAuth();
@@ -113,6 +117,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             );
           })}
         </nav>
+
+        {/* Admin shortcut */}
+        {isAdmin && (
+          <div className="px-4 pb-2">
+            <a
+              href="/admin/marketing"
+              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium bg-purple-500/10 border border-purple-500/20 text-purple-400 hover:bg-purple-500/20 transition-all w-full"
+            >
+              <ShieldCheck size={16} />
+              Admin панел
+            </a>
+          </div>
+        )}
 
         {/* Logout */}
         <div className="p-4 border-t border-white/8">
