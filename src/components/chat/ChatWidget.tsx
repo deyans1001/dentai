@@ -46,8 +46,8 @@ export default function ChatWidget({ clinicId, className, clinicContext }: ChatW
       }),
     })
       .then((r) => r.json())
-      .then((data: { reply: string }) => {
-        setMessages([{ role: "assistant", content: data.reply }]);
+      .then((data: { reply?: string }) => {
+        setMessages([{ role: "assistant", content: data.reply || "Здравейте! Как мога да ви помогна?" }]);
       })
       .catch(() => {
         setMessages([{ role: "assistant", content: "Здравейте! Как мога да ви помогна?" }]);
@@ -85,16 +85,14 @@ export default function ChatWidget({ clinicId, className, clinicContext }: ChatW
         }),
       });
 
-      if (!res.ok) {
-        const errData = await res.json() as { error?: string };
-        throw new Error(errData.error || "Грешка при изпращане");
-      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-      const data = await res.json() as { reply: string };
-      setMessages((prev) => [...prev, { role: "assistant", content: data.reply }]);
+      const data = await res.json() as { reply?: string };
+      if (!data.reply) throw new Error("Empty reply");
+      setMessages((prev) => [...prev, { role: "assistant", content: data.reply as string }]);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Грешка при свързване с AI";
-      setError(msg);
+      console.error("[ChatWidget]", err);
+      setError("Няма връзка с асистента. Моля, опитайте отново.");
     } finally {
       setIsLoading(false);
     }

@@ -121,7 +121,11 @@ export default function LiveDemo() {
                 </button>
               </div>
             )}
-            <ChatWidget className="h-[500px]" clinicContext={clinicContext ?? undefined} />
+            <ChatWidget
+              key={clinicContext ?? "default"}
+              className="h-[500px]"
+              clinicContext={clinicContext ?? undefined}
+            />
           </motion.div>
 
           {/* Right: ElevenLabs Voice Agent */}
