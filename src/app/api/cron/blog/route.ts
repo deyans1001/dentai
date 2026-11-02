@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { groqChat } from "@/lib/ai/groq";
 
 const ADMIN_EMAIL = "deyan.s1001@gmail.com";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://dentai-theta.vercel.app";
@@ -32,9 +33,6 @@ const BLOG_TOPICS = [
 ];
 
 async function generateBlogPost(topic: typeof BLOG_TOPICS[0]): Promise<{ title: string; slug: string; excerpt: string; content: string; readTime: number }> {
-  const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) throw new Error("Липсва GROQ_API_KEY");
-
   const prompt = `Напиши подробна, ангажираща статия в блог за тема: "${topic.title}"
 
 Категория: ${topic.category}
@@ -52,33 +50,20 @@ async function generateBlogPost(topic: typeof BLOG_TOPICS[0]): Promise<{ title: 
 
 Върни САМО съдържанието на статията, без заглавие в началото.`;
 
-  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
-    body: JSON.stringify({
-      model: "llama-3.3-70b-versatile",
-      messages: [{ role: "user", content: prompt }],
-      max_tokens: 1500,
-      temperature: 0.7,
-    }),
+  const content = await groqChat({
+    messages: [{ role: "user", content: prompt }],
+    maxTokens: 1500,
+    temperature: 0.7,
   });
-
-  const data = await res.json() as { choices?: Array<{ message?: { content?: string } }> };
-  const content = data?.choices?.[0]?.message?.content || "";
 
   // Generate excerpt
-  const excerptRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
-    body: JSON.stringify({
-      model: "llama-3.3-70b-versatile",
-      messages: [{ role: "user", content: `Напиши кратко резюме (2 изречения, до 160 символа) за тази статия:\n${content.slice(0, 500)}` }],
-      max_tokens: 100,
+  const excerpt =
+    (await groqChat({
+      messages: [{ role: "user", content: `Напиши кратко резюме (2 изречения, до 160 символа) за тази статия:
+${content.slice(0, 500)}` }],
+      maxTokens: 100,
       temperature: 0.5,
-    }),
-  });
-  const excerptData = await excerptRes.json() as { choices?: Array<{ message?: { content?: string } }> };
-  const excerpt = excerptData?.choices?.[0]?.message?.content || topic.title;
+    })) || topic.title;
 
   const slug = topic.title
     .toLowerCase()

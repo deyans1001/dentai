@@ -1,5 +1,42 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { groqChat, getGroqModel } from "@/lib/ai/groq";
+import { getDemoChatPrompt } from "@/lib/ai/system-prompts";
+
+const MAX_CONTEXT_CHARS = 500;
+const MAX_HISTORY_MESSAGES = 20;
+
+const STYLE_RULES = `СТИЛ:
+- Отговаряй само на български, като истинска българка — топло, директно, естествено.
+- Отговорите ти са 1-3 кратки изречения.
+- Пиши само обикновен текст: без markdown, без звездички, без списъци, без таблици.
+- Не показвай разсъжденията си — давай директно крайния отговор.
+- Всички цени са в евро (€).`;
+
+function cleanReply(text: string): string {
+  return text
+    .replace(/<think>[\s\S]*?<\/think>/gi, "")
+    .replace(/\*\*(.+?)\*\*/g, "$1")
+    .replace(/^#+\s*/gm, "")
+    .trim();
+}
+
+function extractClinicName(context: string | null): string | null {
+  const match = context?.match(/^Клиника:\s*(.+)$/m);
+  return match ? match[1].trim() : null;
+}
+
+function buildContextPrompt(context: string): string {
+  return `Ти си Ива, AI рецепционист на дентална клиника. Собственикът на клиниката тества демо версия с тези данни:
+
+${context}
+
+Използвай тези данни. За неща, които не са посочени (цени, имена на лекари, адрес), кажи учтиво, че ще ги уточниш с клиниката или при преглед, и предложи да запишеш час. Не измисляй конкретни цени.
+При записване питай едно по едно: услуга, ден и час, три имена, телефон. После потвърди записа.
+Не давай медицински диагнози.
+
+${STYLE_RULES}`;
+}
 
 function getBgHour(): number {
   const now = new Date();
@@ -39,7 +76,11 @@ function buildSystemPrompt(clinic: {
   ai_greeting?: string;
 } | null): string {
   if (!clinic) {
-    return `Ти си Ива, рецепционист на дентална клиника. Говориш като истинска българка — топло, директно, естествено. Отговорите ти са 1-2 изречения. Помагаш на пациенти да записват часове и отговаряш на въпроси за клиниката.`;
+    return `Ти си Ива, рецепционистът на клиниката.
+
+${getDemoChatPrompt()}
+
+${STYLE_RULES}`;
   }
 
   const workingHoursText = clinic.working_hours
@@ -80,14 +121,20 @@ function buildSystemPrompt(clinic: {
 - Услуги: ${servicesText}
 ${clinic.ai_greeting ? `\nПерсонализирано приветствие: ${clinic.ai_greeting}` : ""}
 
-Не давай медицински диагнози или съвети. При спешност → дай телефона на клиниката.`;
+Не давай медицински диагнози или съвети. При спешност → дай телефона на клиниката.
+
+${STYLE_RULES}`;
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages, message, clinicId } = await req.json();
+    const { messages, message, clinicId, clinicContext: rawContext } = await req.json();
+    const clinicContext =
+      typeof rawContext === "string" && rawContext.trim()
+        ? rawContext.trim().slice(0, MAX_CONTEXT_CHARS)
+        : null;
 
-    const history: { role: "user" | "assistant"; content: string }[] =
+    const history: { role: "user" | "assistant"; content: string }[] | null =
       Array.isArray(messages) && messages.length > 0
         ? messages
         : message
@@ -95,11 +142,6 @@ export async function POST(req: NextRequest) {
         : null;
 
     if (!history) return NextResponse.json({ reply: "Моля, напишете съобщение." });
-
-    const apiKey = process.env.GROQ_API_KEY;
-    if (!apiKey || apiKey.length < 10) {
-      return NextResponse.json({ reply: "Грешка с конфигурацията. Опитайте по-късно." });
-    }
 
     // Load real clinic data if clinicId is provided
     let clinicData = null;
@@ -119,18 +161,28 @@ export async function POST(req: NextRequest) {
 
     const firstUserIndex = history.findIndex((m) => m.role === "user");
     if (firstUserIndex === -1) return NextResponse.json({ reply: "Моля, напишете съобщение." });
-    const apiMessages = history.slice(firstUserIndex);
+    const apiMessages = history
+      .slice(firstUserIndex)
+      .filter(
+        (m) =>
+          (m.role === "user" || m.role === "assistant") &&
+          typeof m.content === "string" &&
+          m.content.trim()
+      )
+      .slice(-MAX_HISTORY_MESSAGES)
+      .map((m) => ({ role: m.role, content: m.content.slice(0, 2000) }));
+    if (apiMessages.length === 0) return NextResponse.json({ reply: "Моля, напишете съобщение." });
 
     const isGreetingRequest =
       apiMessages.length === 1 && apiMessages[0].content === "__greeting__";
 
+    // Приветствието е фиксиран текст — връщаме го директно, без извикване на модела.
     if (isGreetingRequest) {
-      const greeting = getGreetingWord();
-      const clinicName = clinicData?.name || "клиниката";
-      apiMessages[0] = {
-        role: "user",
-        content: `Поздрави ме с "${greeting}, аз съм Ива, рецепционист на ${clinicName}. С какво мога да помогна?" — точно това изречение, нищо повече.`,
-      };
+      const clinicName =
+        clinicData?.name || extractClinicName(clinicContext) || (clinicContext ? "клиниката" : "Дентал Смайл");
+      return NextResponse.json({
+        reply: `${getGreetingWord()}, аз съм Ива, рецепционист на ${clinicName}. С какво мога да помогна?`,
+      });
     }
 
     const userTurns = apiMessages.filter((m) => m.role === "user").length;
@@ -141,37 +193,20 @@ export async function POST(req: NextRequest) {
       : ``;
 
     const systemPrompt = [
-      buildSystemPrompt(clinicData),
+      clinicData || !clinicContext ? buildSystemPrompt(clinicData) : buildContextPrompt(clinicContext),
       getBgTime(),
       continuationInstruction,
     ]
       .filter(Boolean)
       .join("\n\n");
 
-    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
-        messages: [
-          { role: "system", content: systemPrompt },
-          ...apiMessages,
-        ],
-        max_tokens: 300,
-        temperature: 0.2,
-      }),
-    });
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error((err as { error?: { message?: string } })?.error?.message ?? `API грешка ${res.status}`);
-    }
-
-    const data = await res.json() as { choices?: Array<{ message?: { content?: string } }> };
-    let reply: string = data?.choices?.[0]?.message?.content ?? "";
+    let reply = cleanReply(
+      await groqChat({
+        messages: [{ role: "system", content: systemPrompt }, ...apiMessages],
+        maxTokens: 300,
+        temperature: 0.3,
+      })
+    );
 
     if (conversationStarted && reply) {
       reply = stripGreeting(reply);
@@ -183,7 +218,10 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ reply });
   } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : "Неочаквана грешка";
-    return NextResponse.json({ reply: "Съжалявам, възникна грешка. " + msg });
+    // Техническите детайли отиват само в сървърния лог, не към потребителя.
+    console.error("[api/chat] model=%s", getGroqModel(), error);
+    return NextResponse.json({
+      reply: "Съжалявам, в момента не мога да отговоря. Моля, опитайте отново след малко.",
+    });
   }
 }
