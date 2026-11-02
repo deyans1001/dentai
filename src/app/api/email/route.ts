@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
+import { isInternalRequest } from "@/lib/internal-auth";
 
 const ADMIN_EMAIL = "deyan.s1001@gmail.com";
 const FROM_ADDRESS = "DentAI <onboarding@resend.dev>";
@@ -150,6 +151,12 @@ export async function POST(request: NextRequest) {
     };
 
     const { type } = body;
+
+    // Само контактната форма е публична (и тя винаги отива до админа).
+    // Всички останали типове се пращат само от нашия сървър със секрет.
+    if (type !== "contact" && !isInternalRequest(request.headers)) {
+      return NextResponse.json({ error: "Нямате достъп" }, { status: 403 });
+    }
     let subject = "";
     let html = "";
     let to = body.to || ADMIN_EMAIL;

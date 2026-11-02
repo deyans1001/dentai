@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { internalHeaders } from "@/lib/internal-auth";
 
 export async function GET(req: NextRequest) {
   try {
@@ -56,7 +57,7 @@ export async function POST(req: NextRequest) {
       try {
         await fetch(`${process.env.NEXT_PUBLIC_APP_URL || "https://dentai-theta.vercel.app"}/api/email`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: internalHeaders(),
           body: JSON.stringify({
             type: "social_review",
             posts: [{ content: body.content, category: body.category || "Пост" }],

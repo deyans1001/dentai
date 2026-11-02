@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
+import { internalHeaders } from "@/lib/internal-auth";
 
 export async function POST(request: NextRequest) {
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
@@ -75,7 +76,7 @@ export async function POST(request: NextRequest) {
         // Send confirmation email
         await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/email`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: internalHeaders(),
           body: JSON.stringify({
             type: "payment_confirmation",
             to: clinic.email,

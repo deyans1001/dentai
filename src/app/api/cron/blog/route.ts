@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { groqChat } from "@/lib/ai/groq";
+import { internalHeaders } from "@/lib/internal-auth";
 
 const ADMIN_EMAIL = "deyan.s1001@gmail.com";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://dentai-theta.vercel.app";
@@ -151,7 +152,7 @@ export async function GET(req: Request) {
 
     await fetch(`${APP_URL}/api/email`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: internalHeaders(),
       body: JSON.stringify({
         type: "blog_review",
         postId: post.id,

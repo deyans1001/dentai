@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { internalHeaders } from "@/lib/internal-auth";
 
 export async function POST(req: NextRequest) {
   try {
@@ -100,12 +101,18 @@ export async function POST(req: NextRequest) {
       await supabase.from("staff").insert(staffInserts);
     }
 
-    // Send welcome email (non-blocking)
-    fetch(`${process.env.NEXT_PUBLIC_APP_URL || "https://dentai-theta.vercel.app"}/api/email`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "welcome", to: email, clinicName, ownerName }),
-    }).catch(() => {});
+    // Welcome email — чакаме го (иначе serverless функцията може да приключи преди заявката),
+    // но грешка в имейла не проваля регистрацията.
+    try {
+      const emailRes = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || "https://dentai-theta.vercel.app"}/api/email`, {
+        method: "POST",
+        headers: internalHeaders(),
+        body: JSON.stringify({ type: "welcome", to: email, clinicName, ownerName }),
+      });
+      if (!emailRes.ok) console.error("[register] welcome email failed:", emailRes.status);
+    } catch (emailError) {
+      console.error("[register] welcome email error:", emailError);
+    }
 
     return NextResponse.json({ success: true, clinicId: clinic.id });
   } catch (error: unknown) {
