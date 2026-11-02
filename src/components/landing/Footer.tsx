@@ -33,7 +33,7 @@ export default function Footer() {
           <div>
             <h4 className="text-white text-sm font-semibold mb-3">Контакт</h4>
             <div className="flex flex-col gap-2 text-sm text-slate-500">
-              <a href="tel:+35989703 7079" className="hover:text-slate-300 transition-colors flex items-center gap-2">
+              <a href="tel:+359897037079" className="hover:text-slate-300 transition-colors flex items-center gap-2">
                 📞 089 703 7079
               </a>
               <a href="mailto:teamsupportdentai@gmail.com" className="hover:text-slate-300 transition-colors flex items-center gap-2">
