@@ -22,10 +22,34 @@ export interface GroqMessage {
   content: string;
 }
 
+// Tool calling (OpenAI-съвместим формат). Според документацията на Groq
+// (console.groq.com/docs/tool-use) openai/gpt-oss-120b и openai/gpt-oss-20b
+// поддържат local tool use, но НЕ parallel tool use.
+export interface GroqTool {
+  type: "function";
+  function: {
+    name: string;
+    description: string;
+    parameters: Record<string, unknown>;
+  };
+}
+
+export interface GroqToolCall {
+  id: string;
+  type: "function";
+  function: { name: string; arguments: string };
+}
+
+export interface GroqReply {
+  content: string;
+  toolCalls: GroqToolCall[];
+}
+
 interface GroqChatOptions {
   messages: GroqMessage[];
   maxTokens: number;
   temperature: number;
+  tools?: GroqTool[];
 }
 
 export class GroqError extends Error {
@@ -42,7 +66,13 @@ function isGptOss(model: string): boolean {
   return model.startsWith("openai/gpt-oss");
 }
 
+/** Връща само текста на отговора (без tools). */
 export async function groqChat(options: GroqChatOptions): Promise<string> {
+  return (await groqChatWithTools(options)).content;
+}
+
+/** Връща текста и евентуални tool calls. При 429 опитва веднъж с резервния модел. */
+export async function groqChatWithTools(options: GroqChatOptions): Promise<GroqReply> {
   const primary = getGroqModel();
   try {
     return await groqChatWithModel(primary, options);
@@ -58,8 +88,8 @@ export async function groqChat(options: GroqChatOptions): Promise<string> {
 
 async function groqChatWithModel(
   model: string,
-  { messages, maxTokens, temperature }: GroqChatOptions
-): Promise<string> {
+  { messages, maxTokens, temperature, tools }: GroqChatOptions
+): Promise<GroqReply> {
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) throw new GroqError(0, "GROQ_API_KEY is not set");
 
@@ -78,6 +108,7 @@ async function groqChatWithModel(
       max_completion_tokens: reasoning ? maxTokens + 512 : maxTokens,
       temperature,
       ...(reasoning ? { include_reasoning: false, reasoning_effort: "low" } : {}),
+      ...(tools && tools.length > 0 ? { tools } : {}),
     }),
   });
 
@@ -86,6 +117,12 @@ async function groqChatWithModel(
     throw new GroqError(res.status, err.error?.message ?? `Groq HTTP ${res.status}`);
   }
 
-  const data = (await res.json()) as { choices?: Array<{ message?: { content?: string | null } }> };
-  return (data.choices?.[0]?.message?.content ?? "").trim();
+  const data = (await res.json()) as {
+    choices?: Array<{ message?: { content?: string | null; tool_calls?: GroqToolCall[] } }>;
+  };
+  const message = data.choices?.[0]?.message;
+  return {
+    content: (message?.content ?? "").trim(),
+    toolCalls: message?.tool_calls ?? [],
+  };
 }
