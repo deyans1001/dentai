@@ -4,15 +4,6 @@ import { motion } from "framer-motion";
 
 const PAIN_CARDS = [
   {
-    emoji: "📵",
-    stat: "67%",
-    statColor: "text-brand-red",
-    title: "Пропуснати обаждания",
-    subtitle: "от пациентите не се обаждат пак след пропуснато повикване",
-    accentColor: "from-red-500/50",
-    borderColor: "border-red-500/20",
-  },
-  {
     emoji: "🏃",
     stat: "Конкурентът",
     statColor: "text-brand-purple",
@@ -44,7 +35,7 @@ export default function PainPoints() {
           </p>
         </motion.div>
 
-        <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+        <div className="grid gap-6 max-w-md mx-auto">
           {PAIN_CARDS.map((card, i) => (
             <motion.div
               key={i}
