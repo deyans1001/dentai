@@ -55,7 +55,7 @@ export default function Footer() {
 
         <div className="border-t border-white/8 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-slate-600 text-sm">
-            © 2025 DentAI · Всички права запазени
+            © {new Date().getFullYear()} DentAI · Всички права запазени
           </p>
           <div className="flex gap-4 text-xs text-slate-600">
             <a href="/terms" className="hover:text-slate-400 transition-colors">Условия</a>

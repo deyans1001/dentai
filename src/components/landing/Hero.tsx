@@ -97,7 +97,7 @@ export default function Hero() {
                 </p>
               </div>
               <p className="text-xs text-slate-500 mt-2 max-w-xl mx-auto lg:mx-0">
-                3 клиники стартираха trial тази седмица.
+                3 клиники стартираха пробен период тази седмица.
               </p>
             </motion.div>
 
