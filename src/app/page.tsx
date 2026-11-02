@@ -12,7 +12,7 @@ import Toast from "@/components/landing/Toast";
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-dark-900">
+    <main className="min-h-screen bg-dark-900 overflow-x-clip">
       <Navbar />
       <Hero />
       <PainPoints />
