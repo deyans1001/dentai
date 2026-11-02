@@ -142,7 +142,7 @@ export default function ChatWidget({ clinicId, className, clinicContext }: ChatW
           >
             <div
               className={cn(
-                "max-w-[80%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed",
+                "max-w-[80%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-line",
                 msg.role === "user"
                   ? "bg-gradient-to-br from-brand-blue to-blue-700 text-white rounded-br-sm"
                   : "bg-dark-700 text-slate-200 rounded-bl-sm border border-white/5"

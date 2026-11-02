@@ -1,6 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { groqChat, getGroqModel } from "@/lib/ai/groq";
+import { groqChatWithTools, getGroqModel } from "@/lib/ai/groq";
+import {
+  PROPOSE_BOOKING_TOOL,
+  buildCalendarPrompt,
+  buildSummary,
+  countRecentBookings,
+  formatDateBg,
+  hashIp,
+  isExplicitYes,
+  parseSummary,
+  parseToolArgs,
+  recordBooking,
+  sendToMake,
+  validateBooking,
+  MAX_BOOKINGS_PER_IP_PER_DAY,
+  type BookingDetails,
+} from "@/lib/booking/chat-booking";
 import { getDemoChatPrompt } from "@/lib/ai/system-prompts";
 
 const MAX_CONTEXT_CHARS = 500;
@@ -32,10 +48,41 @@ function buildContextPrompt(context: string): string {
 ${context}
 
 Използвай тези данни. За неща, които не са посочени (цени, имена на лекари, адрес), кажи учтиво, че ще ги уточниш с клиниката или при преглед, и предложи да запишеш час. Не измисляй конкретни цени.
-При записване питай едно по едно: услуга, ден и час, три имена, телефон. После потвърди записа.
+При записване питай едно по едно: услуга, ден и час, име и фамилия, телефон. Това е демо версия и часът НЕ се записва реално: когато събереш данните, обобщи ги и кажи, че в реалната версия часът ще бъде записан директно в календара на клиниката. Никога не казвай, че часът е записан.
 Не давай медицински диагнози.
 
 ${STYLE_RULES}`;
+}
+
+// Модел, който „твърди“ записване без реално изпращане — заменяме отговора.
+const FALSE_BOOKING_CLAIM = /(записах|записахме|успешно записан|часът (ви |ти )?е записан|записан(а|и)? сте)/i;
+
+function getClientIp(req: NextRequest): string {
+  return (
+    req.headers.get("x-real-ip") ||
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    "unknown"
+  );
+}
+
+async function completeBooking(req: NextRequest, details: BookingDetails): Promise<string> {
+  const check = validateBooking(details);
+  if (!check.ok) return check.error;
+  const booking = check.value;
+
+  const ipHash = hashIp(getClientIp(req));
+  if ((await countRecentBookings(ipHash)) >= MAX_BOOKINGS_PER_IP_PER_DAY) {
+    return `От тази връзка вече са направени ${MAX_BOOKINGS_PER_IP_PER_DAY} записвания за последните 24 часа. Часът НЕ е записан. Моля, опитайте отново утре.`;
+  }
+
+  const result = await sendToMake(booking);
+  console.log("[chat-booking] make status=%d ok=%s body=%s", result.status, result.ok, result.body.slice(0, 200));
+  if (!result.ok) {
+    return "Съжалявам, записването не успя и часът НЕ е записан. Моля, опитайте отново след малко.";
+  }
+
+  await recordBooking(ipHash, `${booking.date}T${booking.time}`);
+  return `Готово! Записах Ви за ${formatDateBg(booking.date)} в ${booking.time} ч. — ${booking.service}. Часът е в календара на клиниката.`;
 }
 
 function getBgHour(): number {
@@ -185,6 +232,20 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // Реално записване има само в основното демо („Дентал Смайл“) — не за чужди клиники.
+    const bookingEnabled = !clinicData && !clinicContext;
+
+    // Пациентът отговаря „Да“ на обобщението, генерирано от сървъра → записваме директно,
+    // без модела, с точно данните от обобщението.
+    if (bookingEnabled && apiMessages.length >= 2) {
+      const last = apiMessages[apiMessages.length - 1];
+      const previous = apiMessages[apiMessages.length - 2];
+      const pending = previous.role === "assistant" ? parseSummary(previous.content) : null;
+      if (pending && last.role === "user" && isExplicitYes(last.content)) {
+        return NextResponse.json({ reply: await completeBooking(req, pending) });
+      }
+    }
+
     const userTurns = apiMessages.filter((m) => m.role === "user").length;
     const conversationStarted = firstUserIndex > 0 || userTurns > 1;
 
@@ -194,19 +255,38 @@ export async function POST(req: NextRequest) {
 
     const systemPrompt = [
       clinicData || !clinicContext ? buildSystemPrompt(clinicData) : buildContextPrompt(clinicContext),
-      getBgTime(),
+      bookingEnabled ? buildCalendarPrompt() : getBgTime(),
       continuationInstruction,
     ]
       .filter(Boolean)
       .join("\n\n");
 
-    let reply = cleanReply(
-      await groqChat({
-        messages: [{ role: "system", content: systemPrompt }, ...apiMessages],
-        maxTokens: 300,
-        temperature: 0.3,
-      })
-    );
+    const modelReply = await groqChatWithTools({
+      messages: [{ role: "system", content: systemPrompt }, ...apiMessages],
+      maxTokens: 300,
+      temperature: 0.3,
+      tools: bookingEnabled ? [PROPOSE_BOOKING_TOOL] : undefined,
+    });
+
+    // Моделът е събрал данните → сървърът ги проверява и показва обобщение за „Да“.
+    const toolCall = modelReply.toolCalls.find((c) => c.function.name === PROPOSE_BOOKING_TOOL.function.name);
+    if (bookingEnabled && toolCall) {
+      const args = parseToolArgs(toolCall.function.arguments);
+      const check = args ? validateBooking(args) : null;
+      if (!check) {
+        return NextResponse.json({ reply: "Моля, кажете ми отново името, услугата, телефона, датата и часа." });
+      }
+      return NextResponse.json({ reply: check.ok ? buildSummary(check.value) : check.error });
+    }
+
+    let reply = cleanReply(modelReply.content);
+
+    if (reply && FALSE_BOOKING_CLAIM.test(reply)) {
+      console.warn("[api/chat] replaced false booking claim:", reply.slice(0, 120));
+      reply = bookingEnabled
+        ? "За да запиша часа, ми трябват име и фамилия, услуга, телефон, дата и час. Кое от тях да уточним?"
+        : "Това е демо версия, затова часът не се записва реално. В реалната версия ще бъде записан директно в календара на клиниката.";
+    }
 
     if (conversationStarted && reply) {
       reply = stripGreeting(reply);
