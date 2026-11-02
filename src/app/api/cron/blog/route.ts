@@ -45,6 +45,7 @@ async function generateBlogPost(topic: typeof BLOG_TOPICS[0]): Promise<{ title: 
 - Използвай конкретни числа, примери и факти (може да са реалистични)
 - Целева аудитория: Собственици на дентални клиники в България
 - Продуктът DentAI трябва да е споменат естествено, не агресивно — 1-2 пъти максимум
+- Всички парични суми пиши в евро (€) — България е в еврозоната от 1 януари 2026 г.
 - Подзаглавията форматирай с ##
 - Не използвай bullet points прекалено много — предпочитай параграфи
 
@@ -55,6 +56,7 @@ async function generateBlogPost(topic: typeof BLOG_TOPICS[0]): Promise<{ title: 
     maxTokens: 1500,
     temperature: 0.7,
   });
+  if (!content) throw new Error("Празно съдържание от модела — статията не е записана");
 
   // Generate excerpt
   const excerpt =
