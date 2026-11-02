@@ -19,6 +19,7 @@ export default function VoiceAgent({ agentId }: VoiceAgentProps) {
   const [callSeconds, setCallSeconds] = useState(0);
   const [timerRef, setTimerRef] = useState<ReturnType<typeof setInterval> | null>(null);
   const [permissionError, setPermissionError] = useState(false);
+  const [connectionError, setConnectionError] = useState(false);
 
   const conversation = useConversation({
     onConnect: () => {
@@ -32,6 +33,7 @@ export default function VoiceAgent({ agentId }: VoiceAgentProps) {
     },
     onError: (err) => {
       console.error("ElevenLabs error:", err);
+      setConnectionError(true);
     },
   });
 
@@ -40,13 +42,19 @@ export default function VoiceAgent({ agentId }: VoiceAgentProps) {
 
   const startCall = useCallback(async () => {
     setPermissionError(false);
+    setConnectionError(false);
     try {
       await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch {
       setPermissionError(true);
       return;
     }
-    await conversation.startSession({ agentId });
+    try {
+      await conversation.startSession({ agentId });
+    } catch (err) {
+      console.error("ElevenLabs startSession error:", err);
+      setConnectionError(true);
+    }
   }, [conversation, agentId]);
 
   const endCall = useCallback(async () => {
@@ -102,6 +110,12 @@ export default function VoiceAgent({ agentId }: VoiceAgentProps) {
             {permissionError && (
               <div className="mb-4 px-4 py-2.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs max-w-xs">
                 Моля, разрешете достъп до микрофона за да говорите с Ива.
+              </div>
+            )}
+
+            {connectionError && !permissionError && (
+              <div className="mb-4 px-4 py-2.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs max-w-xs">
+                Не успяхме да се свържем с Ива. Моля, опитайте отново след малко.
               </div>
             )}
 
