@@ -13,15 +13,6 @@ const PAIN_CARDS = [
     borderColor: "border-red-500/20",
   },
   {
-    emoji: "💸",
-    stat: "180K лв",
-    statColor: "text-brand-gold",
-    title: "Изгубени приходи",
-    subtitle: "средно годишно за клиника, поради пропуснати пациенти",
-    accentColor: "from-amber-500/50",
-    borderColor: "border-amber-500/20",
-  },
-  {
     emoji: "🏃",
     stat: "Конкурентът",
     statColor: "text-brand-purple",
@@ -53,7 +44,7 @@ export default function PainPoints() {
           </p>
         </motion.div>
 
-        <div className="grid md:grid-cols-3 gap-6 mb-12">
+        <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
           {PAIN_CARDS.map((card, i) => (
             <motion.div
               key={i}
@@ -78,27 +69,6 @@ export default function PainPoints() {
           ))}
         </div>
 
-        {/* Urgency bar */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
-          className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30 rounded-2xl px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-4"
-        >
-          <div className="flex items-center gap-3">
-            <span className="text-2xl animate-ring">🔔</span>
-            <div>
-              <p className="text-white font-semibold">Ограничена наличност</p>
-              <p className="text-slate-400 text-sm">
-                Приемаме само 5 нови клиники тази седмица
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-brand-gold font-bold text-lg">Само 5 места</span>
-            <span className="text-slate-400">останали</span>
-          </div>
-        </motion.div>
       </div>
     </section>
   );

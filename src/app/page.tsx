@@ -8,7 +8,6 @@ import TrustSection from "@/components/landing/TrustSection";
 import FAQ from "@/components/landing/FAQ";
 import FinalCTA from "@/components/landing/FinalCTA";
 import Footer from "@/components/landing/Footer";
-import Toast from "@/components/landing/Toast";
 
 export default function Home() {
   return (
@@ -23,7 +22,6 @@ export default function Home() {
       <FAQ />
       <FinalCTA />
       <Footer />
-      <Toast />
     </main>
   );
 }

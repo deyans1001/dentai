@@ -137,13 +137,6 @@ export default function Hero() {
               </div>
               <div className="hidden sm:block w-px bg-white/10" />
               <div>
-                <p className="text-3xl font-heading font-bold">
-                  <CounterStat target={47000} suffix=" лв" color="text-brand-gold" />
-                </p>
-                <p className="text-sm text-slate-500 mt-1">Изгубени приходи/годишно</p>
-              </div>
-              <div className="hidden sm:block w-px bg-white/10" />
-              <div>
                 <p className="text-3xl font-heading font-bold text-brand-green">24/7</p>
                 <p className="text-sm text-slate-500 mt-1">Достъпност на AI</p>
               </div>

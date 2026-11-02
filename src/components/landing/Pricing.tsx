@@ -52,7 +52,7 @@ const PLANS: Plan[] = [
     excludes: ["SMS потвърждения"],
     popular: true,
     badge: "Най-популярен",
-    scarcity: "Приемаме само 3 нови клиники на месец.",
+    scarcity: null,
   },
   {
     id: "CLINIC_PLUS",
