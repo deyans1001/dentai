@@ -5,6 +5,16 @@ const ADMIN_EMAIL = "deyan.s1001@gmail.com";
 const FROM_ADDRESS = "DentAI <onboarding@resend.dev>";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://dentai-theta.vercel.app";
 
+// Данните от формите се вмъкват в HTML — екранираме ги, за да не може да се инжектира HTML/линкове.
+function escapeHtml(value: unknown): string {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 const PLAN_LABELS: Record<string, string> = {
   BASIC: "Базов",
   PRO: "Про",
@@ -147,19 +157,19 @@ export async function POST(request: NextRequest) {
     if (type === "payment_confirmation") {
       if (!body.clinicName) return NextResponse.json({ error: "Липсват данни" }, { status: 400 });
       subject = `✅ Плащането е потвърдено — ${body.clinicName} | DentAI`;
-      html = getPaymentConfirmationHtml(body.clinicName, body.plan || "", body.amount || 0);
+      html = getPaymentConfirmationHtml(escapeHtml(body.clinicName), escapeHtml(body.plan), Number(body.amount) || 0);
     } else if (type === "welcome") {
       if (!body.clinicName) return NextResponse.json({ error: "Липсват данни" }, { status: 400 });
       subject = `🦷 Добре дошли в DentAI, ${body.clinicName}!`;
-      html = getWelcomeHtml(body.clinicName, body.ownerName || body.clinicName);
+      html = getWelcomeHtml(escapeHtml(body.clinicName), escapeHtml(body.ownerName || body.clinicName));
     } else if (type === "contact") {
-      subject = `📩 Ново съобщение от ${body.name || "непознат"} — DentAI`;
+      subject = `📩 Ново съобщение от ${String(body.name || "непознат").slice(0, 100)} — DentAI`;
       html = `<div style="font-family:Arial;background:#070d1b;color:#e2e8f0;padding:32px;border-radius:12px;">
         <h2 style="color:#3b82f6;">📩 Ново съобщение от сайта</h2>
-        <p><strong>От:</strong> ${body.name} (${body.email})</p>
-        <p><strong>Тема:</strong> ${body.subject || "—"}</p>
+        <p><strong>От:</strong> ${escapeHtml(body.name)} (${escapeHtml(body.email)})</p>
+        <p><strong>Тема:</strong> ${escapeHtml(body.subject || "—")}</p>
         <hr style="border-color:rgba(255,255,255,0.1);margin:16px 0;">
-        <p style="white-space:pre-wrap;">${body.message}</p>
+        <p style="white-space:pre-wrap;">${escapeHtml(body.message)}</p>
       </div>`;
       to = ADMIN_EMAIL;
     } else if (type === "blog_review") {
@@ -218,6 +228,11 @@ export async function POST(request: NextRequest) {
       subject,
       html,
     });
+
+    if (result.error) {
+      console.error("Resend error:", result.error);
+      return NextResponse.json({ error: "Грешка при изпращане на имейл" }, { status: 502 });
+    }
 
     return NextResponse.json({ success: true, id: result.data?.id });
   } catch (error) {

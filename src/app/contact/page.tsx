@@ -5,13 +5,15 @@ import { useState } from "react";
 export default function ContactPage() {
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", email: "", subject: "", message: "" });
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
+    setError(null);
     try {
-      await fetch("/api/email", {
+      const res = await fetch("/api/email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -20,7 +22,10 @@ export default function ContactPage() {
           ...form,
         }),
       });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setSent(true);
+    } catch {
+      setError("Съобщението не беше изпратено. Моля, опитайте отново или ни пишете на teamsupportdentai@gmail.com.");
     } finally {
       setLoading(false);
     }
@@ -81,6 +86,11 @@ export default function ContactPage() {
         ) : (
           <div className="bg-dark-800 border border-white/8 rounded-2xl p-8">
             <h2 className="text-xl font-heading font-bold text-white mb-6">Изпратете съобщение</h2>
+            {error && (
+              <div className="mb-4 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+                {error}
+              </div>
+            )}
             <form className="space-y-4" onSubmit={handleSubmit}>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
