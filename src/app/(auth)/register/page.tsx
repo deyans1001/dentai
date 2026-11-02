@@ -201,8 +201,10 @@ function RegisterForm() {
         const msg = data.error || "Грешка при регистрация";
         if (msg.includes("вече е регистриран") || msg.includes("already")) {
           setError("Този имейл вече е регистриран. Влезте в акаунта си.");
-        } else if (msg.includes("password") || msg.includes("парол")) {
+        } else if (msg.includes("password")) {
           setError("Паролата трябва да е поне 6 символа.");
+        } else if (/[a-zA-Z]{4,}/.test(msg) && !/[а-яА-Я]/.test(msg)) {
+          setError("Грешка при регистрация. Моля, опитайте отново.");
         } else {
           setError(msg);
         }

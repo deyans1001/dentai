@@ -41,7 +41,15 @@ export async function POST(req: NextRequest) {
       if (signUpError.message.includes("already registered") || signUpError.message.includes("already been registered")) {
         return NextResponse.json({ error: "Този имейл вече е регистриран. Влезте в акаунта си." }, { status: 409 });
       }
-      return NextResponse.json({ error: signUpError.message }, { status: 400 });
+      console.error("[register] createUser error:", signUpError.message);
+      const m = signUpError.message.toLowerCase();
+      if (m.includes("password")) {
+        return NextResponse.json({ error: "Паролата е твърде слаба. Използвайте поне 6 символа." }, { status: 400 });
+      }
+      if (m.includes("email")) {
+        return NextResponse.json({ error: "Невалиден имейл адрес." }, { status: 400 });
+      }
+      return NextResponse.json({ error: "Грешка при регистрация. Моля, опитайте отново." }, { status: 400 });
     }
 
     if (!authData.user) {
@@ -77,7 +85,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Insert staff
-    const staffInserts = staff
+    const staffInserts = (Array.isArray(staff) ? staff : [])
       .filter((s) => s.name.trim())
       .map((s) => ({
         clinic_id: clinic.id,
@@ -101,7 +109,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, clinicId: clinic.id });
   } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : "Неочаквана грешка";
-    return NextResponse.json({ error: msg }, { status: 500 });
+    console.error("[register] unexpected error:", error);
+    return NextResponse.json({ error: "Неочаквана грешка. Моля, опитайте отново." }, { status: 500 });
   }
 }
